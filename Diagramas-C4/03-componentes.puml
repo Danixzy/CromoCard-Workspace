@@ -1,0 +1,64 @@
+@startuml 03_Componentes
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (C4 - Nivel 3) - API de Aplicacao
+
+Container(webApp, "Aplicacao Web", "React + Vite", "Usada por visitantes e clientes")
+Container(mobileApp, "Aplicativo Mobile", "React Native", "Usado por visitantes e clientes")
+Container(backofficeApp, "Painel BackOffice", "React + Vite", "Usada por administradores")
+Container(realtime, "Servico de Mensageria em Tempo Real", "Node.js + WebSocket", "Entrega mensagens de chat em tempo real")
+ContainerDb(db, "Banco de Dados", "PostgreSQL", "Armazena os dados do sistema, acessado via Prisma ORM")
+
+System_Ext(pagamento, "Gateway de Pagamento", "Processa pagamentos e assinaturas")
+System_Ext(transportadora, "Transportadora", "Empresa terceirizada responsavel pela entrega fisica das cartas")
+
+Container_Boundary(api, "API de Aplicacao (Node.js + Express + Prisma)") {
+    Component(compAuth, "Modulo de Autenticacao", "Componente", "Login, cadastro e recuperacao de senha; emissao/validacao de tokens JWT usados pelos demais modulos e pelo servico de tempo real")
+    Component(compPublico, "Modulo de Acesso Publico", "Componente", "Home com destaques, busca global e FAQ")
+    Component(compColecao, "Modulo de Colecao", "Componente", "Dashboard do cliente, albuns, cartas, marcacao de status (possuo/faltante/repetida), progresso e busca de cartas")
+    Component(compComunidade, "Modulo de Comunidade", "Componente", "Grupos, historico de chat em grupo, moderacao e denuncia de mensagens")
+    Component(compChat, "Modulo de Chat Pessoal", "Componente", "Historico de conversas privadas entre colecionadores e moderacao de contatos")
+    Component(compPerfil, "Modulo de Perfil", "Componente", "Dados de perfil, vitrine de conquistas, privacidade e exclusao de conta")
+    Component(compNotificacoes, "Modulo de Notificacoes e Favoritos", "Componente", "Central de notificacoes internas e itens favoritados (albuns, cartas, grupos)")
+    Component(compPagamentos, "Modulo de Pagamentos e Pedidos", "Componente", "Checkout do marketplace, assinatura do plano PRO e acompanhamento de pedidos, integrando com o gateway de pagamento e a transportadora terceirizada")
+    Component(compAdmin, "Modulo de Administracao", "Componente", "Dashboard gerencial, gestao de usuarios, catalogo, comunidade, relatorios e auditoria")
+}
+
+Rel(webApp, compAuth, "Usa")
+Rel(mobileApp, compAuth, "Usa")
+Rel(webApp, compPublico, "Usa")
+Rel(mobileApp, compPublico, "Usa")
+Rel(webApp, compColecao, "Usa")
+Rel(mobileApp, compColecao, "Usa")
+Rel(webApp, compComunidade, "Usa")
+Rel(mobileApp, compComunidade, "Usa")
+Rel(webApp, compChat, "Usa")
+Rel(mobileApp, compChat, "Usa")
+Rel(webApp, compPerfil, "Usa")
+Rel(mobileApp, compPerfil, "Usa")
+Rel(webApp, compNotificacoes, "Usa")
+Rel(mobileApp, compNotificacoes, "Usa")
+Rel(webApp, compPagamentos, "Usa")
+Rel(mobileApp, compPagamentos, "Usa")
+Rel(backofficeApp, compAuth, "Usa")
+Rel(backofficeApp, compAdmin, "Usa")
+
+Rel(realtime, compAuth, "Valida token JWT da conexao via")
+
+Rel(compPagamentos, pagamento, "Processa via", "HTTPS/Webhook")
+Rel(compPagamentos, transportadora, "Solicita entrega da carta via")
+
+Rel(compAuth, db, "Le/grava", "Prisma ORM")
+Rel(compPublico, db, "Le/grava", "Prisma ORM")
+Rel(compColecao, db, "Le/grava", "Prisma ORM")
+Rel(compComunidade, db, "Le/grava", "Prisma ORM")
+Rel(compChat, db, "Le/grava", "Prisma ORM")
+Rel(compPerfil, db, "Le/grava", "Prisma ORM")
+Rel(compNotificacoes, db, "Le/grava", "Prisma ORM")
+Rel(compPagamentos, db, "Le/grava", "Prisma ORM")
+Rel(compAdmin, db, "Le/grava", "Prisma ORM")
+
+SHOW_LEGEND()
+@enduml

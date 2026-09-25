@@ -1,0 +1,787 @@
+// =====================================================================
+//  CromoCard - Sistema de Gestao de Cartas Colecionaveis
+//  3/3 - DER COMPLETO (entidades + atributos + relacionamentos)
+//  Cole em https://dbdiagram.io/d
+//  Organizacao: 43 tabelas, 8 modulos (cores por modulo + TableGroup),
+//  relacionamentos declarados no final, agrupados por modulo.
+//  Export sugerido para o relatorio: PDF ou PNG (botao Export).
+// =====================================================================
+
+Project CromoCard {
+  database_type: 'PostgreSQL'
+  Note: 'DER do sistema de gestao de cartas colecionaveis, comunidade e marketplace. Modulos: Usuarios/Perfil, Catalogo, Colecao, Comunidade, Chat Pessoal, Marketplace, Notificacoes/Favoritos, Moderacao/Admin.'
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+Enum tipo_usuario {
+  CLIENTE
+  VENDEDOR
+  ADMINISTRADOR
+}
+
+Enum status_usuario {
+  ATIVO
+  SUSPENSO
+  EXCLUIDO
+}
+
+Enum privacidade {
+  PUBLICO
+  PRIVADO
+}
+
+Enum tipo_categoria {
+  ALBUM
+  CARTA
+}
+
+Enum status_album {
+  ATIVO
+  INATIVO
+}
+
+Enum origem_preco {
+  VENDA
+  ANUNCIO
+}
+
+Enum status_plano {
+  ATIVA
+  CANCELADA
+  EXPIRADA
+}
+
+Enum status_carta_colecao {
+  POSSUO
+  FALTANTE
+  REPETIDA
+}
+
+Enum tipo_acesso_grupo {
+  ABERTO
+  FECHADO
+}
+
+Enum status_grupo {
+  ATIVO
+  SUSPENSO
+  EXCLUIDO
+}
+
+Enum papel_membro {
+  MEMBRO
+  ADMIN
+}
+
+Enum status_solicitacao {
+  PENDENTE
+  APROVADA
+  RECUSADA
+}
+
+Enum tipo_conteudo_msg {
+  TEXTO
+  IMAGEM
+  CARTA
+  ANUNCIO
+  ENQUETE
+}
+
+Enum status_anuncio {
+  ATIVO
+  PAUSADO
+  ENCERRADO
+  EXCLUIDO
+}
+
+Enum status_proposta {
+  PENDENTE
+  ACEITA
+  RECUSADA
+  EXPIRADA
+}
+
+Enum status_pedido {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  ENVIADO
+  ENTREGUE
+  CANCELADO
+}
+
+Enum metodo_pagamento {
+  CARTAO_CREDITO
+  PIX
+  BOLETO
+}
+
+Enum status_pagamento {
+  PENDENTE
+  APROVADO
+  RECUSADO
+  ESTORNADO
+}
+
+Enum tipo_favorito {
+  ALBUM
+  CARTA
+  GRUPO
+}
+
+Enum tipo_alvo_denuncia {
+  ANUNCIO
+  VENDEDOR
+  USUARIO
+  PERFIL
+  MENSAGEM_GRUPO
+}
+
+Enum status_denuncia {
+  PENDENTE
+  EM_ANALISE
+  RESOLVIDA
+  DESCARTADA
+}
+
+Enum tipo_solic_cadastro {
+  CARTA
+  ALBUM
+  CATEGORIA
+}
+
+// =====================================================================
+// MODULO 1 - USUARIOS, PERFIL E ACESSO
+// =====================================================================
+Table usuario [headercolor: #3E5F8A] {
+  id               bigint         [pk, increment]
+  nome             varchar(120)   [not null]
+  email            varchar(160)   [not null, unique]
+  senha_hash       varchar(255)
+  tipo_usuario     tipo_usuario   [not null]
+  status           status_usuario [not null, default: 'ATIVO']
+  email_confirmado boolean        [not null, default: false]
+  aceite_termos    boolean        [not null, default: false]
+  oauth_provider   varchar(30)
+  oauth_id         varchar(120)
+  data_cadastro    timestamp      [not null, default: `now()`]
+  data_exclusao    timestamp
+  Note: 'Conta unica da plataforma; o tipo define o acesso (Cliente, Vendedor, Administrador).'
+}
+
+Table perfil [headercolor: #3E5F8A] {
+  id                    bigint      [pk, increment]
+  usuario_id            bigint      [not null, unique]
+  bio                   text
+  avatar_url            varchar(255)
+  cidade                varchar(120)
+  privacidade_portfolio privacidade [not null, default: 'PUBLICO']
+}
+
+Table endereco [headercolor: #3E5F8A] {
+  id          bigint       [pk, increment]
+  usuario_id  bigint       [not null]
+  rotulo      varchar(60)  [not null]
+  cep         varchar(9)   [not null]
+  logradouro  varchar(160) [not null]
+  numero      varchar(15)  [not null]
+  complemento varchar(60)
+  bairro      varchar(90)  [not null]
+  cidade      varchar(90)  [not null]
+  estado      char(2)      [not null]
+  principal   boolean      [not null, default: false]
+}
+
+Table token_recuperacao_senha [headercolor: #3E5F8A] {
+  id           bigint       [pk, increment]
+  usuario_id   bigint       [not null]
+  token        varchar(255) [not null, unique]
+  expira_em    timestamp    [not null]
+  usado        boolean      [not null, default: false]
+  data_criacao timestamp    [not null, default: `now()`]
+}
+
+Table conquista [headercolor: #3E5F8A] {
+  id        bigint       [pk, increment]
+  nome      varchar(90)  [not null, unique]
+  descricao varchar(255) [not null]
+  icone_url varchar(255)
+  criterio  varchar(255) [not null]
+}
+
+Table usuario_conquista [headercolor: #3E5F8A] {
+  usuario_id    bigint    [not null]
+  conquista_id  bigint    [not null]
+  data_obtencao timestamp [not null, default: `now()`]
+  indexes {
+    (usuario_id, conquista_id) [pk]
+  }
+}
+
+Table assinatura [headercolor: #3E5F8A] {
+  id                 bigint           [pk, increment]
+  usuario_id         bigint           [not null]
+  plano              varchar(20)      [not null, default: 'PRO']
+  status             status_plano     [not null, default: 'ATIVA']
+  metodo_pagamento   metodo_pagamento [not null]
+  data_inicio        date             [not null]
+  data_fim           date
+  gateway_referencia varchar(120)
+  Note: 'Plano PRO (funcionalidade futura).'
+}
+
+// =====================================================================
+// MODULO 2 - CATALOGO GLOBAL (ALBUNS E CARTAS)
+// =====================================================================
+Table categoria [headercolor: #2E7D5B] {
+  id               bigint         [pk, increment]
+  categoria_pai_id bigint         [note: 'Hierarquia: selecao / time']
+  nome             varchar(90)    [not null]
+  tipo             tipo_categoria [not null]
+  descricao        varchar(255)
+  padrao           boolean        [not null, default: false]
+}
+
+Table raridade [headercolor: #2E7D5B] {
+  id    bigint      [pk, increment]
+  nome  varchar(60) [not null, unique]
+  ordem smallint    [not null]
+}
+
+Table idioma [headercolor: #2E7D5B] {
+  id     bigint      [pk, increment]
+  nome   varchar(60) [not null]
+  codigo varchar(5)  [not null, unique]
+}
+
+Table estado_conservacao [headercolor: #2E7D5B] {
+  id    bigint      [pk, increment]
+  nome  varchar(60) [not null, unique]
+  ordem smallint    [not null]
+  Note: 'Ex.: Mint, Near Mint, Otimo, Bom, Regular.'
+}
+
+Table album [headercolor: #2E7D5B] {
+  id            bigint       [pk, increment]
+  categoria_id  bigint
+  titulo        varchar(160) [not null]
+  editora       varchar(120)
+  ano           smallint
+  descricao     text
+  capa_url      varchar(255)
+  total_cartas  integer      [not null, default: 0]
+  status        status_album [not null, default: 'ATIVO']
+  data_cadastro timestamp    [not null, default: `now()`]
+}
+
+Table carta [headercolor: #2E7D5B] {
+  id                bigint       [pk, increment]
+  album_id          bigint       [note: 'Nulo = carta avulsa / portfolio']
+  categoria_id      bigint
+  raridade_id       bigint
+  idioma_id         bigint
+  nome              varchar(160) [not null]
+  numero            varchar(20)
+  descricao         text
+  imagem_frente_url varchar(255)
+  imagem_verso_url  varchar(255)
+  data_cadastro     timestamp    [not null, default: `now()`]
+  indexes {
+    (album_id, numero) [unique]
+  }
+}
+
+Table foto_carta [headercolor: #2E7D5B] {
+  id       bigint       [pk, increment]
+  carta_id bigint       [not null]
+  url      varchar(255) [not null]
+  ordem    smallint     [not null, default: 0]
+}
+
+Table historico_preco [headercolor: #2E7D5B] {
+  id              bigint        [pk, increment]
+  carta_id        bigint        [not null]
+  preco           decimal(10,2) [not null]
+  data_referencia date          [not null]
+  origem          origem_preco  [not null]
+}
+
+// =====================================================================
+// MODULO 3 - COLECAO DO CLIENTE
+// =====================================================================
+Table colecao [headercolor: #7B4F9D] {
+  id                    bigint       [pk, increment]
+  usuario_id            bigint       [not null, unique]
+  publica               boolean      [not null, default: false]
+  link_compartilhamento varchar(120) [unique]
+  data_criacao          timestamp    [not null, default: `now()`]
+}
+
+Table album_usuario [headercolor: #7B4F9D] {
+  id                   bigint       [pk, increment]
+  colecao_id           bigint       [not null]
+  album_id             bigint       [not null]
+  favorito             boolean      [not null, default: false]
+  progresso_percentual decimal(5,2) [not null, default: 0]
+  data_inicio          timestamp    [not null, default: `now()`]
+  indexes {
+    (colecao_id, album_id) [unique]
+  }
+}
+
+Table colecao_carta [headercolor: #7B4F9D] {
+  id            bigint               [pk, increment]
+  colecao_id    bigint               [not null]
+  carta_id      bigint               [not null]
+  status        status_carta_colecao [not null]
+  quantidade    integer              [not null, default: 1]
+  valor_mercado decimal(10,2)
+  data_adicao   timestamp            [not null, default: `now()`]
+  indexes {
+    (colecao_id, carta_id) [unique]
+  }
+}
+
+// =====================================================================
+// MODULO 4 - COMUNIDADE (GRUPOS)
+// =====================================================================
+Table grupo [headercolor: #C2703D] {
+  id              bigint            [pk, increment]
+  criador_id      bigint            [not null]
+  nome            varchar(120)      [not null]
+  descricao       text
+  imagem_capa_url varchar(255)
+  tipo_acesso     tipo_acesso_grupo [not null]
+  status          status_grupo      [not null, default: 'ATIVO']
+  data_criacao    timestamp         [not null, default: `now()`]
+}
+
+Table membro_grupo [headercolor: #C2703D] {
+  id             bigint       [pk, increment]
+  grupo_id       bigint       [not null]
+  usuario_id     bigint       [not null]
+  papel          papel_membro [not null, default: 'MEMBRO']
+  data_entrada   timestamp    [not null, default: `now()`]
+  silenciado_ate timestamp    [note: 'Silenciar notificacoes do grupo']
+  indexes {
+    (grupo_id, usuario_id) [unique]
+  }
+}
+
+Table solicitacao_grupo [headercolor: #C2703D] {
+  id               bigint             [pk, increment]
+  grupo_id         bigint             [not null]
+  usuario_id       bigint             [not null]
+  avaliado_por_id  bigint
+  status           status_solicitacao [not null, default: 'PENDENTE']
+  data_solicitacao timestamp          [not null, default: `now()`]
+  data_avaliacao   timestamp
+}
+
+Table mensagem_grupo [headercolor: #C2703D] {
+  id                     bigint            [pk, increment]
+  grupo_id               bigint            [not null]
+  autor_id               bigint            [not null]
+  mensagem_respondida_id bigint
+  carta_id               bigint
+  anuncio_id             bigint
+  tipo_conteudo          tipo_conteudo_msg [not null, default: 'TEXTO']
+  conteudo               text
+  anexo_url              varchar(255)
+  fixada                 boolean           [not null, default: false]
+  data_envio             timestamp         [not null, default: `now()`]
+}
+
+Table enquete [headercolor: #C2703D] {
+  id                bigint       [pk, increment]
+  mensagem_grupo_id bigint       [not null, unique]
+  pergunta          varchar(255) [not null]
+  multipla_escolha  boolean      [not null, default: false]
+  encerra_em        timestamp
+}
+
+Table opcao_enquete [headercolor: #C2703D] {
+  id         bigint       [pk, increment]
+  enquete_id bigint       [not null]
+  texto      varchar(160) [not null]
+}
+
+Table voto_enquete [headercolor: #C2703D] {
+  opcao_enquete_id bigint    [not null]
+  usuario_id       bigint    [not null]
+  data_voto        timestamp [not null, default: `now()`]
+  indexes {
+    (opcao_enquete_id, usuario_id) [pk]
+  }
+}
+
+// =====================================================================
+// MODULO 5 - CHAT PESSOAL
+// =====================================================================
+Table conversa [headercolor: #2A7B8C] {
+  id           bigint    [pk, increment]
+  anuncio_id   bigint    [note: 'Preenchido quando a conversa nasce de um anuncio']
+  data_criacao timestamp [not null, default: `now()`]
+}
+
+Table participante_conversa [headercolor: #2A7B8C] {
+  conversa_id  bigint    [not null]
+  usuario_id   bigint    [not null]
+  data_entrada timestamp [not null, default: `now()`]
+  indexes {
+    (conversa_id, usuario_id) [pk]
+  }
+}
+
+Table mensagem [headercolor: #2A7B8C] {
+  id                     bigint       [pk, increment]
+  conversa_id            bigint       [not null]
+  autor_id               bigint       [not null]
+  mensagem_respondida_id bigint
+  conteudo               text
+  anexo_url              varchar(255)
+  lida                   boolean      [not null, default: false]
+  data_leitura           timestamp
+  data_envio             timestamp    [not null, default: `now()`]
+}
+
+Table bloqueio_usuario [headercolor: #2A7B8C] {
+  id            bigint    [pk, increment]
+  bloqueador_id bigint    [not null]
+  bloqueado_id  bigint    [not null]
+  data_bloqueio timestamp [not null, default: `now()`]
+  indexes {
+    (bloqueador_id, bloqueado_id) [unique]
+  }
+}
+
+// =====================================================================
+// MODULO 6 - MARKETPLACE (ANUNCIOS, PEDIDOS, AVALIACOES)
+// =====================================================================
+Table anuncio [headercolor: #A63D5F] {
+  id                    bigint         [pk, increment]
+  vendedor_id           bigint         [not null]
+  carta_id              bigint         [not null]
+  estado_conservacao_id bigint
+  preco                 decimal(10,2)  [not null]
+  quantidade_disponivel integer        [not null, default: 1]
+  descricao             text
+  status                status_anuncio [not null, default: 'ATIVO']
+  data_criacao          timestamp      [not null, default: `now()`]
+  data_atualizacao      timestamp      [not null, default: `now()`]
+}
+
+Table foto_anuncio [headercolor: #A63D5F] {
+  id         bigint       [pk, increment]
+  anuncio_id bigint       [not null]
+  url        varchar(255) [not null]
+  ordem      smallint     [not null, default: 0]
+}
+
+Table proposta [headercolor: #A63D5F] {
+  id             bigint          [pk, increment]
+  anuncio_id     bigint          [not null]
+  comprador_id   bigint          [not null]
+  valor_ofertado decimal(10,2)   [not null]
+  mensagem       varchar(255)
+  status         status_proposta [not null, default: 'PENDENTE']
+  data_criacao   timestamp       [not null, default: `now()`]
+}
+
+Table pedido [headercolor: #A63D5F] {
+  id                  bigint        [pk, increment]
+  anuncio_id          bigint        [not null]
+  comprador_id        bigint        [not null]
+  vendedor_id         bigint        [not null]
+  endereco_entrega_id bigint        [not null]
+  quantidade          integer       [not null, default: 1]
+  valor_itens         decimal(10,2) [not null]
+  valor_frete         decimal(10,2) [not null, default: 0]
+  valor_total         decimal(10,2) [not null]
+  forma_envio         varchar(60)   [not null]
+  status              status_pedido [not null, default: 'AGUARDANDO_PAGAMENTO']
+  data_pedido         timestamp     [not null, default: `now()`]
+}
+
+Table pagamento [headercolor: #A63D5F] {
+  id                 bigint           [pk, increment]
+  pedido_id          bigint           [not null, unique]
+  metodo             metodo_pagamento [not null]
+  valor              decimal(10,2)    [not null]
+  status             status_pagamento [not null, default: 'PENDENTE']
+  gateway_referencia varchar(120)
+  data_atualizacao   timestamp        [not null, default: `now()`]
+}
+
+Table avaliacao [headercolor: #A63D5F] {
+  id           bigint       [pk, increment]
+  pedido_id    bigint       [not null, unique]
+  autor_id     bigint       [not null, note: 'Comprador que avalia']
+  vendedor_id  bigint       [not null, note: 'Vendedor avaliado']
+  nota         smallint     [not null, note: '1 a 5']
+  comentario   varchar(500)
+  data_criacao timestamp    [not null, default: `now()`]
+}
+
+// =====================================================================
+// MODULO 7 - NOTIFICACOES E FAVORITOS
+// =====================================================================
+Table favorito [headercolor: #B08A2E] {
+  id           bigint        [pk, increment]
+  usuario_id   bigint        [not null]
+  tipo         tipo_favorito [not null]
+  album_id     bigint
+  carta_id     bigint
+  grupo_id     bigint
+  data_criacao timestamp     [not null, default: `now()`]
+  Note: 'Exatamente um dos alvos (album_id / carta_id / grupo_id) e preenchido, conforme o campo tipo.'
+}
+
+Table alerta_preco [headercolor: #B08A2E] {
+  id           bigint        [pk, increment]
+  usuario_id   bigint        [not null]
+  carta_id     bigint        [not null]
+  preco_alvo   decimal(10,2) [not null]
+  ativo        boolean       [not null, default: true]
+  data_criacao timestamp     [not null, default: `now()`]
+  Note: 'Alertas de preco (funcionalidade futura).'
+}
+
+Table notificacao_global [headercolor: #B08A2E] {
+  id                  bigint       [pk, increment]
+  admin_id            bigint       [not null]
+  titulo              varchar(120) [not null]
+  conteudo            varchar(500) [not null]
+  total_destinatarios integer      [not null, default: 0]
+  data_disparo        timestamp    [not null, default: `now()`]
+}
+
+Table notificacao [headercolor: #B08A2E] {
+  id                    bigint       [pk, increment]
+  usuario_id            bigint       [not null]
+  notificacao_global_id bigint
+  titulo                varchar(120) [not null]
+  mensagem              varchar(500) [not null]
+  tipo                  varchar(40)  [not null]
+  link_referencia       varchar(255)
+  lida                  boolean      [not null, default: false]
+  data_criacao          timestamp    [not null, default: `now()`]
+}
+
+// =====================================================================
+// MODULO 8 - MODERACAO E ADMINISTRACAO
+// =====================================================================
+Table denuncia [headercolor: #5A5A66] {
+  id                bigint             [pk, increment]
+  denunciante_id    bigint             [not null]
+  moderador_id      bigint
+  anuncio_id        bigint
+  usuario_alvo_id   bigint
+  mensagem_grupo_id bigint
+  tipo_alvo         tipo_alvo_denuncia [not null]
+  motivo            varchar(90)        [not null]
+  descricao         varchar(500)
+  status            status_denuncia    [not null, default: 'PENDENTE']
+  data_criacao      timestamp          [not null, default: `now()`]
+  data_resolucao    timestamp
+  Note: 'Alvo polimorfico: anuncio, usuario/vendedor/perfil ou mensagem de grupo, conforme tipo_alvo.'
+}
+
+Table solicitacao_cadastro [headercolor: #5A5A66] {
+  id              bigint              [pk, increment]
+  solicitante_id  bigint              [not null]
+  avaliado_por_id bigint
+  carta_id        bigint              [note: 'Item criado apos aprovacao']
+  album_id        bigint              [note: 'Item criado apos aprovacao']
+  tipo            tipo_solic_cadastro [not null]
+  dados           jsonb               [not null, note: 'Payload com os dados sugeridos pelo usuario']
+  status          status_solicitacao  [not null, default: 'PENDENTE']
+  data_criacao    timestamp           [not null, default: `now()`]
+  data_avaliacao  timestamp
+}
+
+Table log_auditoria [headercolor: #5A5A66] {
+  id               bigint      [pk, increment]
+  admin_id         bigint      [not null]
+  acao             varchar(90) [not null]
+  entidade_afetada varchar(60) [not null]
+  entidade_id      bigint
+  detalhes         jsonb
+  data_registro    timestamp   [not null, default: `now()`]
+}
+
+Table configuracao_global [headercolor: #5A5A66] {
+  id                bigint       [pk, increment]
+  atualizado_por_id bigint
+  chave             varchar(90)  [not null, unique]
+  valor             text         [not null]
+  descricao         varchar(255)
+  data_atualizacao  timestamp    [not null, default: `now()`]
+}
+
+// =====================================================================
+// RELACIONAMENTOS  ( >  muitos-para-um   |   -  um-para-um )
+// =====================================================================
+
+// --- 1. Usuarios, Perfil e Acesso ------------------------------------
+Ref: perfil.usuario_id                  - usuario.id
+Ref: endereco.usuario_id                > usuario.id
+Ref: token_recuperacao_senha.usuario_id > usuario.id
+Ref: usuario_conquista.usuario_id       > usuario.id
+Ref: usuario_conquista.conquista_id     > conquista.id
+Ref: assinatura.usuario_id              > usuario.id
+
+// --- 2. Catalogo Global ----------------------------------------------
+Ref: categoria.categoria_pai_id > categoria.id
+Ref: album.categoria_id         > categoria.id
+Ref: carta.album_id             > album.id
+Ref: carta.categoria_id         > categoria.id
+Ref: carta.raridade_id          > raridade.id
+Ref: carta.idioma_id            > idioma.id
+Ref: foto_carta.carta_id        > carta.id
+Ref: historico_preco.carta_id   > carta.id
+
+// --- 3. Colecao do Cliente -------------------------------------------
+Ref: colecao.usuario_id       - usuario.id
+Ref: album_usuario.colecao_id > colecao.id
+Ref: album_usuario.album_id   > album.id
+Ref: colecao_carta.colecao_id > colecao.id
+Ref: colecao_carta.carta_id   > carta.id
+
+// --- 4. Comunidade (Grupos) ------------------------------------------
+Ref: grupo.criador_id                      > usuario.id
+Ref: membro_grupo.grupo_id                 > grupo.id
+Ref: membro_grupo.usuario_id               > usuario.id
+Ref: solicitacao_grupo.grupo_id            > grupo.id
+Ref: solicitacao_grupo.usuario_id          > usuario.id
+Ref: solicitacao_grupo.avaliado_por_id     > usuario.id
+Ref: mensagem_grupo.grupo_id               > grupo.id
+Ref: mensagem_grupo.autor_id               > usuario.id
+Ref: mensagem_grupo.mensagem_respondida_id > mensagem_grupo.id
+Ref: mensagem_grupo.carta_id               > carta.id
+Ref: mensagem_grupo.anuncio_id             > anuncio.id
+Ref: enquete.mensagem_grupo_id             - mensagem_grupo.id
+Ref: opcao_enquete.enquete_id              > enquete.id
+Ref: voto_enquete.opcao_enquete_id         > opcao_enquete.id
+Ref: voto_enquete.usuario_id               > usuario.id
+
+// --- 5. Chat Pessoal --------------------------------------------------
+Ref: participante_conversa.conversa_id > conversa.id
+Ref: participante_conversa.usuario_id  > usuario.id
+Ref: mensagem.conversa_id              > conversa.id
+Ref: mensagem.autor_id                 > usuario.id
+Ref: mensagem.mensagem_respondida_id   > mensagem.id
+Ref: conversa.anuncio_id               > anuncio.id
+Ref: bloqueio_usuario.bloqueador_id    > usuario.id
+Ref: bloqueio_usuario.bloqueado_id     > usuario.id
+
+// --- 6. Marketplace ---------------------------------------------------
+Ref: anuncio.vendedor_id           > usuario.id
+Ref: anuncio.carta_id              > carta.id
+Ref: anuncio.estado_conservacao_id > estado_conservacao.id
+Ref: foto_anuncio.anuncio_id       > anuncio.id
+Ref: proposta.anuncio_id           > anuncio.id
+Ref: proposta.comprador_id         > usuario.id
+Ref: pedido.anuncio_id             > anuncio.id
+Ref: pedido.comprador_id           > usuario.id
+Ref: pedido.vendedor_id            > usuario.id
+Ref: pedido.endereco_entrega_id    > endereco.id
+Ref: pagamento.pedido_id           - pedido.id
+Ref: avaliacao.pedido_id           - pedido.id
+Ref: avaliacao.autor_id            > usuario.id
+Ref: avaliacao.vendedor_id         > usuario.id
+
+// --- 7. Notificacoes e Favoritos --------------------------------------
+Ref: favorito.usuario_id               > usuario.id
+Ref: favorito.album_id                 > album.id
+Ref: favorito.carta_id                 > carta.id
+Ref: favorito.grupo_id                 > grupo.id
+Ref: alerta_preco.usuario_id           > usuario.id
+Ref: alerta_preco.carta_id             > carta.id
+Ref: notificacao.usuario_id            > usuario.id
+Ref: notificacao.notificacao_global_id > notificacao_global.id
+Ref: notificacao_global.admin_id       > usuario.id
+
+// --- 8. Moderacao e Administracao -------------------------------------
+Ref: denuncia.denunciante_id               > usuario.id
+Ref: denuncia.moderador_id                 > usuario.id
+Ref: denuncia.anuncio_id                   > anuncio.id
+Ref: denuncia.usuario_alvo_id              > usuario.id
+Ref: denuncia.mensagem_grupo_id            > mensagem_grupo.id
+Ref: solicitacao_cadastro.solicitante_id   > usuario.id
+Ref: solicitacao_cadastro.avaliado_por_id  > usuario.id
+Ref: solicitacao_cadastro.carta_id         > carta.id
+Ref: solicitacao_cadastro.album_id         > album.id
+Ref: log_auditoria.admin_id                > usuario.id
+Ref: configuracao_global.atualizado_por_id > usuario.id
+
+// =====================================================================
+// AGRUPAMENTOS VISUAIS
+// =====================================================================
+TableGroup "1 - Usuarios, Perfil e Acesso" {
+  usuario
+  perfil
+  endereco
+  token_recuperacao_senha
+  conquista
+  usuario_conquista
+  assinatura
+}
+
+TableGroup "2 - Catalogo Global" {
+  categoria
+  raridade
+  idioma
+  estado_conservacao
+  album
+  carta
+  foto_carta
+  historico_preco
+}
+
+TableGroup "3 - Colecao do Cliente" {
+  colecao
+  album_usuario
+  colecao_carta
+}
+
+TableGroup "4 - Comunidade (Grupos)" {
+  grupo
+  membro_grupo
+  solicitacao_grupo
+  mensagem_grupo
+  enquete
+  opcao_enquete
+  voto_enquete
+}
+
+TableGroup "5 - Chat Pessoal" {
+  conversa
+  participante_conversa
+  mensagem
+  bloqueio_usuario
+}
+
+TableGroup "6 - Marketplace" {
+  anuncio
+  foto_anuncio
+  proposta
+  pedido
+  pagamento
+  avaliacao
+}
+
+TableGroup "7 - Notificacoes e Favoritos" {
+  favorito
+  alerta_preco
+  notificacao
+  notificacao_global
+}
+
+TableGroup "8 - Moderacao e Administracao" {
+  denuncia
+  solicitacao_cadastro
+  log_auditoria
+  configuracao_global
+}

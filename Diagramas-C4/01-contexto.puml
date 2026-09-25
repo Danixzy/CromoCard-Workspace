@@ -1,0 +1,25 @@
+@startuml 01_Contexto
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Contexto (C4 - Nivel 1) - Sistema de Gestao de Cartas Colecionaveis
+
+Person(visitante, "Visitante", "Usuario nao autenticado que explora a plataforma antes de criar conta")
+Person(cliente, "Cliente", "Colecionador autenticado que gerencia sua colecao, participa de grupos, conversa com outros colecionadores e negocia cartas no marketplace")
+Person(admin, "Administrador", "Responsavel pela gestao, moderacao e configuracao da plataforma")
+
+System(sistema, "Sistema de Gestao de Cartas Colecionaveis", "Permite colecionadores organizar albuns e cartas, participar de grupos da comunidade, conversar em tempo real, negociar cartas e assinar planos, e permite administradores gerenciarem usuarios, catalogo e comunidade")
+
+System_Ext(pagamento, "Gateway de Pagamento", "Provedor externo (ex: Stripe/Mercado Pago) que processa pagamentos de compras no marketplace e assinaturas do plano PRO")
+System_Ext(transportadora, "Transportadora", "Empresa terceirizada responsavel pela entrega fisica das cartas compradas no marketplace")
+
+Rel(visitante, sistema, "Explora destaques, busca conteudo, cria conta e faz login")
+Rel(cliente, sistema, "Gerencia colecao, participa de grupos, conversa em tempo real, compra/vende cartas e configura o proprio perfil")
+Rel(admin, sistema, "Administra usuarios, catalogo, comunidade e configuracoes da plataforma")
+
+Rel(sistema, pagamento, "Processa pagamentos e assinaturas via", "HTTPS/Webhook")
+Rel(sistema, transportadora, "Solicita entrega das cartas compradas via")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,708 @@
+@startuml 03_DER_Completo
+' =====================================================================
+'  CromoCard - Sistema de Gestao de Cartas Colecionaveis
+'  3/3 - DER COMPLETO  (entidades + atributos + relacionamentos)
+'  Cole em https://www.plantuml.com/plantuml/uml/
+'  LAYOUT: "left to right direction" deixa o desenho em RETRATO
+'  (~3265 x 6055). Sem isso ele vira uma tira de 7938 x 2018, que nao
+'  cabe legivel na pagina e estoura o limite de 4096px do PNG.
+'  DICA DE IMPRESSAO: exporte em SVG (nao PNG) - o SVG mantem o texto
+'  nitido em qualquer zoom e e o melhor formato para colar no relatorio.
+' =====================================================================
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Verdana
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam classAttributeIconSize 0
+skinparam nodesep 40
+skinparam ranksep 65
+skinparam packageStyle rectangle
+skinparam titleFontSize 22
+skinparam titleFontStyle bold
+
+skinparam package {
+  FontSize 15
+  FontStyle bold
+  FontColor #22303F
+  BorderThickness 2
+  BorderColor #8C96A5
+}
+
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #6B7280
+  BorderThickness 1
+  FontSize 13
+  FontStyle bold
+  FontColor #1F2937
+  AttributeFontSize 11
+  AttributeFontColor #374151
+}
+
+skinparam ArrowColor #52607A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #33415C
+
+hide circle
+hide empty methods
+
+left to right direction
+
+title CromoCard — DER Completo (43 entidades / 8 modulos)
+
+legend bottom
+  |= Marcacao |= Significado |
+  | <b>*</b> / <b>o</b> | obrigatorio (NOT NULL) / opcional (NULL) |
+  | <b><<PK>> <<FK>> <<UQ>></b> | chave primaria / estrangeira / valor unico |
+  | <b>&#124;&#124;--o{</b> | um para zero ou muitos |
+  | <b>&#124;&#124;--&#124;{</b> | um para um ou muitos |
+  | <b>&#124;&#124;--&#124;&#124;</b> | um para um |
+  | <b>&#124;o--o{</b> | zero-ou-um para zero ou muitos |
+endlegend
+
+' =====================================================================
+' MODULO 1 - USUARIOS, PERFIL E ACESSO
+' =====================================================================
+package "1. Usuarios, Perfil e Acesso" as M1 #E8EEF9 {
+
+  entity usuario {
+    * id : bigserial <<PK>>
+    -- Atributos --
+    * nome : varchar(120)
+    * email : varchar(160) <<UQ>>
+    o senha_hash : varchar(255)
+    * tipo_usuario : enum (CLIENTE, VENDEDOR, ADMINISTRADOR)
+    * status : enum (ATIVO, SUSPENSO, EXCLUIDO)
+    * email_confirmado : boolean
+    * aceite_termos : boolean
+    o oauth_provider : varchar(30)
+    o oauth_id : varchar(120)
+    * data_cadastro : timestamp
+    o data_exclusao : timestamp
+  }
+
+  entity perfil {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * usuario_id : bigint <<FK>> <<UQ>>
+    -- Atributos --
+    o bio : text
+    o avatar_url : varchar(255)
+    o cidade : varchar(120)
+    * privacidade_portfolio : enum (PUBLICO, PRIVADO)
+  }
+
+  entity endereco {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * usuario_id : bigint <<FK>>
+    -- Atributos --
+    * rotulo : varchar(60)
+    * cep : varchar(9)
+    * logradouro : varchar(160)
+    * numero : varchar(15)
+    o complemento : varchar(60)
+    * bairro : varchar(90)
+    * cidade : varchar(90)
+    * estado : char(2)
+    * principal : boolean
+  }
+
+  entity token_recuperacao_senha {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * usuario_id : bigint <<FK>>
+    -- Atributos --
+    * token : varchar(255) <<UQ>>
+    * expira_em : timestamp
+    * usado : boolean
+    * data_criacao : timestamp
+  }
+
+  entity conquista {
+    * id : bigserial <<PK>>
+    -- Atributos --
+    * nome : varchar(90) <<UQ>>
+    * descricao : varchar(255)
+    o icone_url : varchar(255)
+    * criterio : varchar(255)
+  }
+
+  entity usuario_conquista {
+    * usuario_id : bigint <<PK>> <<FK>>
+    * conquista_id : bigint <<PK>> <<FK>>
+    -- Atributos --
+    * data_obtencao : timestamp
+  }
+
+  entity assinatura {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * usuario_id : bigint <<FK>>
+    -- Atributos --
+    * plano : varchar(20)
+    * status : enum (ATIVA, CANCELADA, EXPIRADA)
+    * metodo_pagamento : enum
+    * data_inicio : date
+    o data_fim : date
+    o gateway_referencia : varchar(120)
+  }
+}
+
+' =====================================================================
+' MODULO 2 - CATALOGO GLOBAL
+' =====================================================================
+package "2. Catalogo Global (Albuns e Cartas)" as M2 #E6F3EC {
+
+  entity categoria {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    o categoria_pai_id : bigint <<FK>>
+    -- Atributos --
+    * nome : varchar(90)
+    * tipo : enum (ALBUM, CARTA)
+    o descricao : varchar(255)
+    * padrao : boolean
+  }
+
+  entity raridade {
+    * id : bigserial <<PK>>
+    -- Atributos --
+    * nome : varchar(60) <<UQ>>
+    * ordem : smallint
+  }
+
+  entity idioma {
+    * id : bigserial <<PK>>
+    -- Atributos --
+    * nome : varchar(60)
+    * codigo : varchar(5) <<UQ>>
+  }
+
+  entity estado_conservacao {
+    * id : bigserial <<PK>>
+    -- Atributos --
+    * nome : varchar(60) <<UQ>>
+    * ordem : smallint
+  }
+
+  entity album {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    o categoria_id : bigint <<FK>>
+    -- Atributos --
+    * titulo : varchar(160)
+    o editora : varchar(120)
+    o ano : smallint
+    o descricao : text
+    o capa_url : varchar(255)
+    * total_cartas : integer
+    * status : enum (ATIVO, INATIVO)
+    * data_cadastro : timestamp
+  }
+
+  entity carta {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    o album_id : bigint <<FK>>
+    o categoria_id : bigint <<FK>>
+    o raridade_id : bigint <<FK>>
+    o idioma_id : bigint <<FK>>
+    -- Atributos --
+    * nome : varchar(160)
+    o numero : varchar(20)
+    o descricao : text
+    o imagem_frente_url : varchar(255)
+    o imagem_verso_url : varchar(255)
+    * data_cadastro : timestamp
+    .. UQ (album_id, numero) ..
+  }
+
+  entity foto_carta {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * carta_id : bigint <<FK>>
+    -- Atributos --
+    * url : varchar(255)
+    * ordem : smallint
+  }
+
+  entity historico_preco {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * carta_id : bigint <<FK>>
+    -- Atributos --
+    * preco : decimal(10,2)
+    * data_referencia : date
+    * origem : enum (VENDA, ANUNCIO)
+  }
+}
+
+' =====================================================================
+' MODULO 3 - COLECAO DO CLIENTE
+' =====================================================================
+package "3. Colecao do Cliente" as M3 #F0E9F7 {
+
+  entity colecao {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * usuario_id : bigint <<FK>> <<UQ>>
+    -- Atributos --
+    * publica : boolean
+    o link_compartilhamento : varchar(120) <<UQ>>
+    * data_criacao : timestamp
+  }
+
+  entity album_usuario {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * colecao_id : bigint <<FK>>
+    * album_id : bigint <<FK>>
+    -- Atributos --
+    * favorito : boolean
+    * progresso_percentual : decimal(5,2)
+    * data_inicio : timestamp
+    .. UQ (colecao_id, album_id) ..
+  }
+
+  entity colecao_carta {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * colecao_id : bigint <<FK>>
+    * carta_id : bigint <<FK>>
+    -- Atributos --
+    * status : enum (POSSUO, FALTANTE, REPETIDA)
+    * quantidade : integer
+    o valor_mercado : decimal(10,2)
+    * data_adicao : timestamp
+    .. UQ (colecao_id, carta_id) ..
+  }
+}
+
+' =====================================================================
+' MODULO 4 - COMUNIDADE (GRUPOS)
+' =====================================================================
+package "4. Comunidade (Grupos)" as M4 #FBEEE3 {
+
+  entity grupo {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * criador_id : bigint <<FK>>
+    -- Atributos --
+    * nome : varchar(120)
+    o descricao : text
+    o imagem_capa_url : varchar(255)
+    * tipo_acesso : enum (ABERTO, FECHADO)
+    * status : enum (ATIVO, SUSPENSO, EXCLUIDO)
+    * data_criacao : timestamp
+  }
+
+  entity membro_grupo {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * grupo_id : bigint <<FK>>
+    * usuario_id : bigint <<FK>>
+    -- Atributos --
+    * papel : enum (MEMBRO, ADMIN)
+    * data_entrada : timestamp
+    o silenciado_ate : timestamp
+    .. UQ (grupo_id, usuario_id) ..
+  }
+
+  entity solicitacao_grupo {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * grupo_id : bigint <<FK>>
+    * usuario_id : bigint <<FK>>
+    o avaliado_por_id : bigint <<FK>>
+    -- Atributos --
+    * status : enum (PENDENTE, APROVADA, RECUSADA)
+    * data_solicitacao : timestamp
+    o data_avaliacao : timestamp
+  }
+
+  entity mensagem_grupo {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * grupo_id : bigint <<FK>>
+    * autor_id : bigint <<FK>>
+    o mensagem_respondida_id : bigint <<FK>>
+    o carta_id : bigint <<FK>>
+    o anuncio_id : bigint <<FK>>
+    -- Atributos --
+    * tipo_conteudo : enum (TEXTO, IMAGEM, CARTA, ANUNCIO, ENQUETE)
+    o conteudo : text
+    o anexo_url : varchar(255)
+    * fixada : boolean
+    * data_envio : timestamp
+  }
+
+  entity enquete {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * mensagem_grupo_id : bigint <<FK>> <<UQ>>
+    -- Atributos --
+    * pergunta : varchar(255)
+    * multipla_escolha : boolean
+    o encerra_em : timestamp
+  }
+
+  entity opcao_enquete {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * enquete_id : bigint <<FK>>
+    -- Atributos --
+    * texto : varchar(160)
+  }
+
+  entity voto_enquete {
+    * opcao_enquete_id : bigint <<PK>> <<FK>>
+    * usuario_id : bigint <<PK>> <<FK>>
+    -- Atributos --
+    * data_voto : timestamp
+  }
+}
+
+' =====================================================================
+' MODULO 5 - CHAT PESSOAL
+' =====================================================================
+package "5. Chat Pessoal" as M5 #E4F2F5 {
+
+  entity conversa {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    o anuncio_id : bigint <<FK>>
+    -- Atributos --
+    * data_criacao : timestamp
+  }
+
+  entity participante_conversa {
+    * conversa_id : bigint <<PK>> <<FK>>
+    * usuario_id : bigint <<PK>> <<FK>>
+    -- Atributos --
+    * data_entrada : timestamp
+  }
+
+  entity mensagem {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * conversa_id : bigint <<FK>>
+    * autor_id : bigint <<FK>>
+    o mensagem_respondida_id : bigint <<FK>>
+    -- Atributos --
+    o conteudo : text
+    o anexo_url : varchar(255)
+    * lida : boolean
+    o data_leitura : timestamp
+    * data_envio : timestamp
+  }
+
+  entity bloqueio_usuario {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * bloqueador_id : bigint <<FK>>
+    * bloqueado_id : bigint <<FK>>
+    -- Atributos --
+    * data_bloqueio : timestamp
+    .. UQ (bloqueador_id, bloqueado_id) ..
+  }
+}
+
+' =====================================================================
+' MODULO 6 - MARKETPLACE
+' =====================================================================
+package "6. Marketplace (Anuncios, Pedidos, Avaliacoes)" as M6 #FBE9EF {
+
+  entity anuncio {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * vendedor_id : bigint <<FK>>
+    * carta_id : bigint <<FK>>
+    o estado_conservacao_id : bigint <<FK>>
+    -- Atributos --
+    * preco : decimal(10,2)
+    * quantidade_disponivel : integer
+    o descricao : text
+    * status : enum (ATIVO, PAUSADO, ENCERRADO, EXCLUIDO)
+    * data_criacao : timestamp
+    * data_atualizacao : timestamp
+  }
+
+  entity foto_anuncio {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * anuncio_id : bigint <<FK>>
+    -- Atributos --
+    * url : varchar(255)
+    * ordem : smallint
+  }
+
+  entity proposta {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * anuncio_id : bigint <<FK>>
+    * comprador_id : bigint <<FK>>
+    -- Atributos --
+    * valor_ofertado : decimal(10,2)
+    o mensagem : varchar(255)
+    * status : enum (PENDENTE, ACEITA, RECUSADA, EXPIRADA)
+    * data_criacao : timestamp
+  }
+
+  entity pedido {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * anuncio_id : bigint <<FK>>
+    * comprador_id : bigint <<FK>>
+    * vendedor_id : bigint <<FK>>
+    * endereco_entrega_id : bigint <<FK>>
+    -- Atributos --
+    * quantidade : integer
+    * valor_itens : decimal(10,2)
+    * valor_frete : decimal(10,2)
+    * valor_total : decimal(10,2)
+    * forma_envio : varchar(60)
+    * status : enum (AGUARDANDO_PAGAMENTO, PAGO, ENVIADO, ENTREGUE, CANCELADO)
+    * data_pedido : timestamp
+  }
+
+  entity pagamento {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * pedido_id : bigint <<FK>> <<UQ>>
+    -- Atributos --
+    * metodo : enum (CARTAO_CREDITO, PIX, BOLETO)
+    * valor : decimal(10,2)
+    * status : enum (PENDENTE, APROVADO, RECUSADO, ESTORNADO)
+    o gateway_referencia : varchar(120)
+    * data_atualizacao : timestamp
+  }
+
+  entity avaliacao {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * pedido_id : bigint <<FK>> <<UQ>>
+    * autor_id : bigint <<FK>>
+    * vendedor_id : bigint <<FK>>
+    -- Atributos --
+    * nota : smallint (1 a 5)
+    o comentario : varchar(500)
+    * data_criacao : timestamp
+  }
+}
+
+' =====================================================================
+' MODULO 7 - NOTIFICACOES E FAVORITOS
+' =====================================================================
+package "7. Notificacoes e Favoritos" as M7 #FCF5E0 {
+
+  entity favorito {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * usuario_id : bigint <<FK>>
+    o album_id : bigint <<FK>>
+    o carta_id : bigint <<FK>>
+    o grupo_id : bigint <<FK>>
+    -- Atributos --
+    * tipo : enum (ALBUM, CARTA, GRUPO)
+    * data_criacao : timestamp
+  }
+
+  entity alerta_preco {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * usuario_id : bigint <<FK>>
+    * carta_id : bigint <<FK>>
+    -- Atributos --
+    * preco_alvo : decimal(10,2)
+    * ativo : boolean
+    * data_criacao : timestamp
+  }
+
+  entity notificacao {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * usuario_id : bigint <<FK>>
+    o notificacao_global_id : bigint <<FK>>
+    -- Atributos --
+    * titulo : varchar(120)
+    * mensagem : varchar(500)
+    * tipo : varchar(40)
+    o link_referencia : varchar(255)
+    * lida : boolean
+    * data_criacao : timestamp
+  }
+
+  entity notificacao_global {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * admin_id : bigint <<FK>>
+    -- Atributos --
+    * titulo : varchar(120)
+    * conteudo : varchar(500)
+    * total_destinatarios : integer
+    * data_disparo : timestamp
+  }
+}
+
+' =====================================================================
+' MODULO 8 - MODERACAO E ADMINISTRACAO
+' =====================================================================
+package "8. Moderacao e Administracao" as M8 #ECECEF {
+
+  entity denuncia {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * denunciante_id : bigint <<FK>>
+    o moderador_id : bigint <<FK>>
+    o anuncio_id : bigint <<FK>>
+    o usuario_alvo_id : bigint <<FK>>
+    o mensagem_grupo_id : bigint <<FK>>
+    -- Atributos --
+    * tipo_alvo : enum (ANUNCIO, VENDEDOR, USUARIO, PERFIL, MENSAGEM_GRUPO)
+    * motivo : varchar(90)
+    o descricao : varchar(500)
+    * status : enum (PENDENTE, EM_ANALISE, RESOLVIDA, DESCARTADA)
+    * data_criacao : timestamp
+    o data_resolucao : timestamp
+  }
+
+  entity solicitacao_cadastro {
+    * id : bigserial <<PK>>
+    -- Chaves estrangeiras --
+    * solicitante_id : bigint <<FK>>
+    o avaliado_por_id : bigint <<FK>>
+    o carta_id : bigint <<FK>>
+    o album_id : bigint <<FK>>
+    -- Atributos --
+    * tipo : enum (CARTA, ALBUM, CATEGORIA)
+    * dados : jsonb
+    * status : enum (PENDENTE, APROVADA, RECUSADA)
+    * data_criacao : timestamp
+    o data_avaliacao : timestamp
+  }
+
+  entity log_auditoria {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    * admin_id : bigint <<FK>>
+    -- Atributos --
+    * acao : varchar(90)
+    * entidade_afetada : varchar(60)
+    o entidade_id : bigint
+    o detalhes : jsonb
+    * data_registro : timestamp
+  }
+
+  entity configuracao_global {
+    * id : bigserial <<PK>>
+    -- Chave estrangeira --
+    o atualizado_por_id : bigint <<FK>>
+    -- Atributos --
+    * chave : varchar(90) <<UQ>>
+    * valor : text
+    o descricao : varchar(255)
+    * data_atualizacao : timestamp
+  }
+}
+
+' =====================================================================
+' RELACIONAMENTOS
+' =====================================================================
+
+' --- 1. Usuarios, Perfil e Acesso -------------------------------------
+usuario   ||--||  perfil                  : possui
+usuario   ||--o{  endereco                : cadastra
+usuario   ||--o{  token_recuperacao_senha : solicita
+usuario   ||--o{  usuario_conquista       : desbloqueia
+conquista ||--o{  usuario_conquista       : concedida em
+usuario   ||--o{  assinatura              : assina
+
+' --- 2. Catalogo Global -----------------------------------------------
+categoria |o--o{ categoria       : subdivide
+categoria ||--o{ album           : classifica
+categoria ||--o{ carta           : classifica
+raridade  ||--o{ carta           : define
+idioma    ||--o{ carta           : define
+album     ||--o{ carta           : contem
+carta     ||--o{ foto_carta      : ilustrada por
+carta     ||--o{ historico_preco : registra
+
+' --- 3. Colecao do Cliente --------------------------------------------
+usuario ||--|| colecao       : mantem
+colecao ||--o{ album_usuario : acompanha
+album   ||--o{ album_usuario : acompanhado em
+colecao ||--o{ colecao_carta : registra
+carta   ||--o{ colecao_carta : aparece em
+
+' --- 4. Comunidade (Grupos) -------------------------------------------
+usuario        ||--o{ grupo             : cria
+grupo          ||--|{ membro_grupo      : tem
+usuario        ||--o{ membro_grupo      : participa
+grupo          ||--o{ solicitacao_grupo : recebe
+usuario        ||--o{ solicitacao_grupo : envia
+usuario        |o--o{ solicitacao_grupo : avalia
+grupo          ||--o{ mensagem_grupo    : hospeda
+usuario        ||--o{ mensagem_grupo    : publica
+mensagem_grupo |o--o{ mensagem_grupo    : responde
+carta          |o--o{ mensagem_grupo    : compartilhada
+anuncio        |o--o{ mensagem_grupo    : compartilhado
+mensagem_grupo ||--|| enquete           : contem
+enquete        ||--|{ opcao_enquete     : oferece
+opcao_enquete  ||--o{ voto_enquete      : recebe
+usuario        ||--o{ voto_enquete      : vota
+
+' --- 5. Chat Pessoal ---------------------------------------------------
+conversa ||--|{ participante_conversa : reune
+usuario  ||--o{ participante_conversa : participa
+conversa ||--o{ mensagem              : contem
+usuario  ||--o{ mensagem              : envia
+mensagem |o--o{ mensagem              : responde
+anuncio  |o--o{ conversa              : origina
+usuario  ||--o{ bloqueio_usuario      : bloqueia
+usuario  ||--o{ bloqueio_usuario      : e bloqueado
+
+' --- 6. Marketplace ----------------------------------------------------
+usuario            ||--o{ anuncio      : anuncia
+carta              ||--o{ anuncio      : ofertada em
+estado_conservacao |o--o{ anuncio      : descreve
+anuncio            ||--o{ foto_anuncio : exibe
+anuncio            ||--o{ proposta     : recebe
+usuario            ||--o{ proposta     : propoe
+anuncio            ||--o{ pedido       : gera
+usuario            ||--o{ pedido       : compra
+usuario            ||--o{ pedido       : vende
+endereco           ||--o{ pedido       : entregue em
+pedido             ||--|| pagamento    : quitado por
+pedido             ||--|| avaliacao    : avaliado por
+usuario            ||--o{ avaliacao    : escreve
+usuario            ||--o{ avaliacao    : recebe
+
+' --- 7. Notificacoes e Favoritos ---------------------------------------
+usuario            ||--o{ favorito           : favorita
+album              |o--o{ favorito           : alvo
+carta              |o--o{ favorito           : alvo
+grupo              |o--o{ favorito           : alvo
+usuario            ||--o{ alerta_preco       : configura
+carta              ||--o{ alerta_preco       : monitorada
+usuario            ||--o{ notificacao        : recebe
+notificacao_global |o--o{ notificacao        : expande em
+usuario            ||--o{ notificacao_global : dispara
+
+' --- 8. Moderacao e Administracao --------------------------------------
+usuario        ||--o{ denuncia             : denuncia
+usuario        |o--o{ denuncia             : modera
+anuncio        |o--o{ denuncia             : alvo
+usuario        |o--o{ denuncia             : alvo
+mensagem_grupo |o--o{ denuncia             : alvo
+usuario        ||--o{ solicitacao_cadastro : solicita
+usuario        |o--o{ solicitacao_cadastro : aprova
+carta          |o--o{ solicitacao_cadastro : resulta em
+album          |o--o{ solicitacao_cadastro : resulta em
+usuario        ||--o{ log_auditoria        : produz
+usuario        |o--o{ configuracao_global  : atualiza
+
+@enduml

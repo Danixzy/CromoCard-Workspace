@@ -1,0 +1,43 @@
+@startuml 02_Containers
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Containers (C4 - Nivel 2) - Sistema de Gestao de Cartas Colecionaveis
+
+Person(visitante, "Visitante", "Usuario nao autenticado")
+Person(cliente, "Cliente", "Colecionador autenticado")
+Person(admin, "Administrador", "Gestor da plataforma")
+
+System_Boundary(sistema, "Sistema de Gestao de Cartas Colecionaveis") {
+    Container(webApp, "Aplicacao Web", "React + Vite", "SPA usada por visitantes e clientes para navegar, gerenciar colecao, grupos, chat e marketplace")
+    Container(mobileApp, "Aplicativo Mobile", "React Native", "App usado por visitantes e clientes com as mesmas funcionalidades da web, otimizado para uso mobile")
+    Container(backofficeApp, "Painel BackOffice", "React + Vite", "SPA usada por administradores para gestao e moderacao da plataforma")
+    Container(api, "API de Aplicacao", "Node.js + Express + Prisma", "Expoe via REST as regras de negocio de catalogo, colecao, grupos, chat, perfil, pagamentos e administracao. Autentica requisicoes via JWT")
+    Container(realtime, "Servico de Mensageria em Tempo Real", "Node.js + WebSocket", "Entrega mensagens de chat pessoal e de grupo em tempo real; conexao autenticada via JWT")
+    ContainerDb(db, "Banco de Dados", "PostgreSQL", "Armazena usuarios, cartas, albuns, colecoes, grupos, mensagens, notificacoes, favoritos, pagamentos e assinaturas. Acessado via Prisma ORM")
+}
+
+System_Ext(pagamento, "Gateway de Pagamento", "Processa pagamentos e assinaturas (ex: Stripe/Mercado Pago)")
+System_Ext(transportadora, "Transportadora", "Empresa terceirizada responsavel pela entrega fisica das cartas compradas no marketplace")
+
+Rel(visitante, webApp, "Usa", "HTTPS")
+Rel(visitante, mobileApp, "Usa", "HTTPS")
+Rel(cliente, webApp, "Usa", "HTTPS")
+Rel(cliente, mobileApp, "Usa", "HTTPS")
+Rel(admin, backofficeApp, "Usa", "HTTPS")
+
+Rel(webApp, api, "Consome", "JSON/HTTPS, JWT no header Authorization")
+Rel(mobileApp, api, "Consome", "JSON/HTTPS, JWT no header Authorization")
+Rel(backofficeApp, api, "Consome", "JSON/HTTPS, JWT no header Authorization")
+Rel(webApp, realtime, "Troca mensagens", "WebSocket, autenticado via JWT")
+Rel(mobileApp, realtime, "Troca mensagens", "WebSocket, autenticado via JWT")
+
+Rel(api, db, "Le e grava", "SQL via Prisma ORM")
+Rel(realtime, db, "Persiste mensagens", "SQL via Prisma ORM")
+
+Rel(api, pagamento, "Processa pagamentos e assinaturas via", "HTTPS/Webhook")
+Rel(api, transportadora, "Solicita entrega das cartas compradas via")
+
+SHOW_LEGEND()
+@enduml

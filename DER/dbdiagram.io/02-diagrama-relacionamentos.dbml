@@ -1,0 +1,458 @@
+// =====================================================================
+//  CromoCard - Sistema de Gestao de Cartas Colecionaveis
+//  2/3 - DIAGRAMA DE RELACIONAMENTOS (entidades + cardinalidades)
+//  Cole em https://dbdiagram.io/d
+//  Somente as chaves (PK/FK) sao exibidas: as caixas ficam pequenas
+//  e as linhas de relacionamento ficam legiveis para print.
+//  Os atributos completos estao no arquivo 01.
+//  Notacao dbdiagram:  >  muitos-para-um   |   -  um-para-um
+// =====================================================================
+
+Project CromoCard_Relacionamentos {
+  database_type: 'PostgreSQL'
+  Note: 'Diagrama de relacionamentos: 43 entidades e suas cardinalidades. Apenas chaves primarias e estrangeiras.'
+}
+
+// =====================================================================
+// MODULO 1 - USUARIOS, PERFIL E ACESSO
+// =====================================================================
+Table usuario [headercolor: #3E5F8A] {
+  id bigint [pk]
+}
+
+Table perfil [headercolor: #3E5F8A] {
+  id         bigint [pk]
+  usuario_id bigint [not null, unique]
+}
+
+Table endereco [headercolor: #3E5F8A] {
+  id         bigint [pk]
+  usuario_id bigint [not null]
+}
+
+Table token_recuperacao_senha [headercolor: #3E5F8A] {
+  id         bigint [pk]
+  usuario_id bigint [not null]
+}
+
+Table conquista [headercolor: #3E5F8A] {
+  id bigint [pk]
+}
+
+Table usuario_conquista [headercolor: #3E5F8A] {
+  usuario_id   bigint [not null]
+  conquista_id bigint [not null]
+  indexes {
+    (usuario_id, conquista_id) [pk]
+  }
+}
+
+Table assinatura [headercolor: #3E5F8A] {
+  id         bigint [pk]
+  usuario_id bigint [not null]
+}
+
+// =====================================================================
+// MODULO 2 - CATALOGO GLOBAL
+// =====================================================================
+Table categoria [headercolor: #2E7D5B] {
+  id               bigint [pk]
+  categoria_pai_id bigint
+}
+
+Table raridade [headercolor: #2E7D5B] {
+  id bigint [pk]
+}
+
+Table idioma [headercolor: #2E7D5B] {
+  id bigint [pk]
+}
+
+Table estado_conservacao [headercolor: #2E7D5B] {
+  id bigint [pk]
+}
+
+Table album [headercolor: #2E7D5B] {
+  id           bigint [pk]
+  categoria_id bigint
+}
+
+Table carta [headercolor: #2E7D5B] {
+  id           bigint [pk]
+  album_id     bigint
+  categoria_id bigint
+  raridade_id  bigint
+  idioma_id    bigint
+}
+
+Table foto_carta [headercolor: #2E7D5B] {
+  id       bigint [pk]
+  carta_id bigint [not null]
+}
+
+Table historico_preco [headercolor: #2E7D5B] {
+  id       bigint [pk]
+  carta_id bigint [not null]
+}
+
+// =====================================================================
+// MODULO 3 - COLECAO DO CLIENTE
+// =====================================================================
+Table colecao [headercolor: #7B4F9D] {
+  id         bigint [pk]
+  usuario_id bigint [not null, unique]
+}
+
+Table album_usuario [headercolor: #7B4F9D] {
+  id         bigint [pk]
+  colecao_id bigint [not null]
+  album_id   bigint [not null]
+}
+
+Table colecao_carta [headercolor: #7B4F9D] {
+  id         bigint [pk]
+  colecao_id bigint [not null]
+  carta_id   bigint [not null]
+}
+
+// =====================================================================
+// MODULO 4 - COMUNIDADE (GRUPOS)
+// =====================================================================
+Table grupo [headercolor: #C2703D] {
+  id         bigint [pk]
+  criador_id bigint [not null]
+}
+
+Table membro_grupo [headercolor: #C2703D] {
+  id         bigint [pk]
+  grupo_id   bigint [not null]
+  usuario_id bigint [not null]
+}
+
+Table solicitacao_grupo [headercolor: #C2703D] {
+  id              bigint [pk]
+  grupo_id        bigint [not null]
+  usuario_id      bigint [not null]
+  avaliado_por_id bigint
+}
+
+Table mensagem_grupo [headercolor: #C2703D] {
+  id                     bigint [pk]
+  grupo_id               bigint [not null]
+  autor_id               bigint [not null]
+  mensagem_respondida_id bigint
+  carta_id               bigint
+  anuncio_id             bigint
+}
+
+Table enquete [headercolor: #C2703D] {
+  id                bigint [pk]
+  mensagem_grupo_id bigint [not null, unique]
+}
+
+Table opcao_enquete [headercolor: #C2703D] {
+  id         bigint [pk]
+  enquete_id bigint [not null]
+}
+
+Table voto_enquete [headercolor: #C2703D] {
+  opcao_enquete_id bigint [not null]
+  usuario_id       bigint [not null]
+  indexes {
+    (opcao_enquete_id, usuario_id) [pk]
+  }
+}
+
+// =====================================================================
+// MODULO 5 - CHAT PESSOAL
+// =====================================================================
+Table conversa [headercolor: #2A7B8C] {
+  id         bigint [pk]
+  anuncio_id bigint
+}
+
+Table participante_conversa [headercolor: #2A7B8C] {
+  conversa_id bigint [not null]
+  usuario_id  bigint [not null]
+  indexes {
+    (conversa_id, usuario_id) [pk]
+  }
+}
+
+Table mensagem [headercolor: #2A7B8C] {
+  id                     bigint [pk]
+  conversa_id            bigint [not null]
+  autor_id               bigint [not null]
+  mensagem_respondida_id bigint
+}
+
+Table bloqueio_usuario [headercolor: #2A7B8C] {
+  id            bigint [pk]
+  bloqueador_id bigint [not null]
+  bloqueado_id  bigint [not null]
+}
+
+// =====================================================================
+// MODULO 6 - MARKETPLACE
+// =====================================================================
+Table anuncio [headercolor: #A63D5F] {
+  id                    bigint [pk]
+  vendedor_id           bigint [not null]
+  carta_id              bigint [not null]
+  estado_conservacao_id bigint
+}
+
+Table foto_anuncio [headercolor: #A63D5F] {
+  id         bigint [pk]
+  anuncio_id bigint [not null]
+}
+
+Table proposta [headercolor: #A63D5F] {
+  id           bigint [pk]
+  anuncio_id   bigint [not null]
+  comprador_id bigint [not null]
+}
+
+Table pedido [headercolor: #A63D5F] {
+  id                  bigint [pk]
+  anuncio_id          bigint [not null]
+  comprador_id        bigint [not null]
+  vendedor_id         bigint [not null]
+  endereco_entrega_id bigint [not null]
+}
+
+Table pagamento [headercolor: #A63D5F] {
+  id        bigint [pk]
+  pedido_id bigint [not null, unique]
+}
+
+Table avaliacao [headercolor: #A63D5F] {
+  id          bigint [pk]
+  pedido_id   bigint [not null, unique]
+  autor_id    bigint [not null]
+  vendedor_id bigint [not null]
+}
+
+// =====================================================================
+// MODULO 7 - NOTIFICACOES E FAVORITOS
+// =====================================================================
+Table favorito [headercolor: #B08A2E] {
+  id         bigint [pk]
+  usuario_id bigint [not null]
+  album_id   bigint
+  carta_id   bigint
+  grupo_id   bigint
+}
+
+Table alerta_preco [headercolor: #B08A2E] {
+  id         bigint [pk]
+  usuario_id bigint [not null]
+  carta_id   bigint [not null]
+}
+
+Table notificacao_global [headercolor: #B08A2E] {
+  id       bigint [pk]
+  admin_id bigint [not null]
+}
+
+Table notificacao [headercolor: #B08A2E] {
+  id                    bigint [pk]
+  usuario_id            bigint [not null]
+  notificacao_global_id bigint
+}
+
+// =====================================================================
+// MODULO 8 - MODERACAO E ADMINISTRACAO
+// =====================================================================
+Table denuncia [headercolor: #5A5A66] {
+  id                bigint [pk]
+  denunciante_id    bigint [not null]
+  moderador_id      bigint
+  anuncio_id        bigint
+  usuario_alvo_id   bigint
+  mensagem_grupo_id bigint
+}
+
+Table solicitacao_cadastro [headercolor: #5A5A66] {
+  id              bigint [pk]
+  solicitante_id  bigint [not null]
+  avaliado_por_id bigint
+  carta_id        bigint
+  album_id        bigint
+}
+
+Table log_auditoria [headercolor: #5A5A66] {
+  id       bigint [pk]
+  admin_id bigint [not null]
+}
+
+Table configuracao_global [headercolor: #5A5A66] {
+  id                bigint [pk]
+  atualizado_por_id bigint
+}
+
+// =====================================================================
+// RELACIONAMENTOS
+// =====================================================================
+
+// --- 1. Usuarios, Perfil e Acesso ------------------------------------
+Ref: perfil.usuario_id                  - usuario.id    // 1 : 1  possui
+Ref: endereco.usuario_id                > usuario.id    // 1 : N  cadastra
+Ref: token_recuperacao_senha.usuario_id > usuario.id    // 1 : N  solicita
+Ref: usuario_conquista.usuario_id       > usuario.id    // 1 : N  desbloqueia
+Ref: usuario_conquista.conquista_id     > conquista.id  // 1 : N  concedida em
+Ref: assinatura.usuario_id              > usuario.id    // 1 : N  assina
+
+// --- 2. Catalogo Global ----------------------------------------------
+Ref: categoria.categoria_pai_id > categoria.id  // auto-relacionamento
+Ref: album.categoria_id         > categoria.id  // 1 : N  classifica
+Ref: carta.album_id             > album.id      // 1 : N  contem
+Ref: carta.categoria_id         > categoria.id  // 1 : N  classifica
+Ref: carta.raridade_id          > raridade.id   // 1 : N  define
+Ref: carta.idioma_id            > idioma.id     // 1 : N  define
+Ref: foto_carta.carta_id        > carta.id      // 1 : N  ilustrada por
+Ref: historico_preco.carta_id   > carta.id      // 1 : N  registra
+
+// --- 3. Colecao do Cliente -------------------------------------------
+Ref: colecao.usuario_id         - usuario.id  // 1 : 1  mantem
+Ref: album_usuario.colecao_id   > colecao.id  // 1 : N  acompanha
+Ref: album_usuario.album_id     > album.id    // 1 : N  acompanhado em
+Ref: colecao_carta.colecao_id   > colecao.id  // 1 : N  registra
+Ref: colecao_carta.carta_id     > carta.id    // 1 : N  aparece em
+
+// --- 4. Comunidade (Grupos) ------------------------------------------
+Ref: grupo.criador_id                     > usuario.id        // cria
+Ref: membro_grupo.grupo_id                > grupo.id          // tem
+Ref: membro_grupo.usuario_id              > usuario.id        // participa
+Ref: solicitacao_grupo.grupo_id           > grupo.id          // recebe
+Ref: solicitacao_grupo.usuario_id         > usuario.id        // envia
+Ref: solicitacao_grupo.avaliado_por_id    > usuario.id        // avalia
+Ref: mensagem_grupo.grupo_id              > grupo.id          // hospeda
+Ref: mensagem_grupo.autor_id              > usuario.id        // publica
+Ref: mensagem_grupo.mensagem_respondida_id > mensagem_grupo.id // responde
+Ref: mensagem_grupo.carta_id              > carta.id          // compartilhada
+Ref: mensagem_grupo.anuncio_id            > anuncio.id        // compartilhado
+Ref: enquete.mensagem_grupo_id            - mensagem_grupo.id // contem (1:1)
+Ref: opcao_enquete.enquete_id             > enquete.id        // oferece
+Ref: voto_enquete.opcao_enquete_id        > opcao_enquete.id  // recebe
+Ref: voto_enquete.usuario_id              > usuario.id        // vota
+
+// --- 5. Chat Pessoal --------------------------------------------------
+Ref: participante_conversa.conversa_id > conversa.id  // reune
+Ref: participante_conversa.usuario_id  > usuario.id   // participa
+Ref: mensagem.conversa_id              > conversa.id  // contem
+Ref: mensagem.autor_id                 > usuario.id   // envia
+Ref: mensagem.mensagem_respondida_id   > mensagem.id  // responde
+Ref: conversa.anuncio_id               > anuncio.id   // origina
+Ref: bloqueio_usuario.bloqueador_id    > usuario.id   // bloqueia
+Ref: bloqueio_usuario.bloqueado_id     > usuario.id   // e bloqueado
+
+// --- 6. Marketplace ---------------------------------------------------
+Ref: anuncio.vendedor_id           > usuario.id            // anuncia
+Ref: anuncio.carta_id              > carta.id              // ofertada em
+Ref: anuncio.estado_conservacao_id > estado_conservacao.id // descreve
+Ref: foto_anuncio.anuncio_id       > anuncio.id            // exibe
+Ref: proposta.anuncio_id           > anuncio.id            // recebe
+Ref: proposta.comprador_id         > usuario.id            // propoe
+Ref: pedido.anuncio_id             > anuncio.id            // gera
+Ref: pedido.comprador_id           > usuario.id            // compra
+Ref: pedido.vendedor_id            > usuario.id            // vende
+Ref: pedido.endereco_entrega_id    > endereco.id           // entregue em
+Ref: pagamento.pedido_id           - pedido.id             // quitado por (1:1)
+Ref: avaliacao.pedido_id           - pedido.id             // avaliado por (1:1)
+Ref: avaliacao.autor_id            > usuario.id            // escreve
+Ref: avaliacao.vendedor_id         > usuario.id            // recebe
+
+// --- 7. Notificacoes e Favoritos --------------------------------------
+Ref: favorito.usuario_id                > usuario.id            // favorita
+Ref: favorito.album_id                  > album.id              // alvo
+Ref: favorito.carta_id                  > carta.id              // alvo
+Ref: favorito.grupo_id                  > grupo.id              // alvo
+Ref: alerta_preco.usuario_id            > usuario.id            // configura
+Ref: alerta_preco.carta_id              > carta.id              // monitorada
+Ref: notificacao.usuario_id             > usuario.id            // recebe
+Ref: notificacao.notificacao_global_id  > notificacao_global.id // expande em
+Ref: notificacao_global.admin_id        > usuario.id            // dispara
+
+// --- 8. Moderacao e Administracao -------------------------------------
+Ref: denuncia.denunciante_id             > usuario.id        // denuncia
+Ref: denuncia.moderador_id               > usuario.id        // modera
+Ref: denuncia.anuncio_id                 > anuncio.id        // alvo
+Ref: denuncia.usuario_alvo_id            > usuario.id        // alvo
+Ref: denuncia.mensagem_grupo_id          > mensagem_grupo.id // alvo
+Ref: solicitacao_cadastro.solicitante_id  > usuario.id       // solicita
+Ref: solicitacao_cadastro.avaliado_por_id > usuario.id       // aprova
+Ref: solicitacao_cadastro.carta_id        > carta.id         // resulta em
+Ref: solicitacao_cadastro.album_id        > album.id         // resulta em
+Ref: log_auditoria.admin_id               > usuario.id       // produz
+Ref: configuracao_global.atualizado_por_id > usuario.id      // atualiza
+
+// =====================================================================
+// AGRUPAMENTOS VISUAIS
+// =====================================================================
+TableGroup "1 - Usuarios, Perfil e Acesso" {
+  usuario
+  perfil
+  endereco
+  token_recuperacao_senha
+  conquista
+  usuario_conquista
+  assinatura
+}
+
+TableGroup "2 - Catalogo Global" {
+  categoria
+  raridade
+  idioma
+  estado_conservacao
+  album
+  carta
+  foto_carta
+  historico_preco
+}
+
+TableGroup "3 - Colecao do Cliente" {
+  colecao
+  album_usuario
+  colecao_carta
+}
+
+TableGroup "4 - Comunidade (Grupos)" {
+  grupo
+  membro_grupo
+  solicitacao_grupo
+  mensagem_grupo
+  enquete
+  opcao_enquete
+  voto_enquete
+}
+
+TableGroup "5 - Chat Pessoal" {
+  conversa
+  participante_conversa
+  mensagem
+  bloqueio_usuario
+}
+
+TableGroup "6 - Marketplace" {
+  anuncio
+  foto_anuncio
+  proposta
+  pedido
+  pagamento
+  avaliacao
+}
+
+TableGroup "7 - Notificacoes e Favoritos" {
+  favorito
+  alerta_preco
+  notificacao
+  notificacao_global
+}
+
+TableGroup "8 - Moderacao e Administracao" {
+  denuncia
+  solicitacao_cadastro
+  log_auditoria
+  configuracao_global
+}
