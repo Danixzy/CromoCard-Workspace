@@ -1,0 +1,1872 @@
+specification {
+
+  element ator {
+    style {
+      shape person
+      color secondary
+    }
+  }
+
+  element sistema {
+    style {
+      shape rectangle
+    }
+  }
+
+  element container {
+    style {
+      shape rectangle
+    }
+  }
+
+  element componente {
+    style {
+      shape rectangle
+      color primary
+    }
+  }
+
+  element sistemaExterno {
+    style {
+      shape rectangle
+      color gray
+    }
+  }
+
+  tag painel-publico
+  tag colecao
+  tag comunidade
+  tag chat
+  tag perfil
+  tag notificacoes
+  tag marketplace
+  tag backoffice
+  tag funcionalidade-futura
+}
+
+model {
+
+  // ---------------------------------------------------------------
+  // Atores (C4 Nivel 1 + coluna "Atores" dos casos de uso)
+  // ---------------------------------------------------------------
+
+  visitante = ator 'Visitante' {
+    description 'Usuario nao autenticado que explora a plataforma antes de criar conta'
+  }
+
+  cliente = ator 'Cliente' {
+    description '
+      Colecionador autenticado que gerencia sua colecao, participa de grupos,
+      conversa com outros colecionadores e negocia cartas no marketplace
+    '
+  }
+
+  vendedor = ator 'Vendedor' {
+    description 'Usuario autenticado com perfil de Vendedor, responsavel pelos anuncios do marketplace'
+  }
+
+  administrador = ator 'Administrador' {
+    description 'Responsavel pela gestao, moderacao e configuracao da plataforma'
+  }
+
+  // ---------------------------------------------------------------
+  // Sistema (C4 Nivel 2 - Containers / Nivel 3 - Componentes)
+  // ---------------------------------------------------------------
+
+  cromocard = sistema 'Sistema de Gestao de Cartas Colecionaveis' {
+    description '
+      Permite colecionadores organizarem albuns e cartas, participarem de grupos
+      da comunidade, conversarem em tempo real, negociarem cartas e assinarem
+      planos, e permite administradores gerenciarem usuarios, catalogo e comunidade
+    '
+
+    appWeb = container 'Aplicacao Web' {
+      technology 'React + Vite'
+      description 'SPA usada por visitantes e clientes para navegar, gerenciar colecao, grupos, chat e marketplace'
+      style {
+        shape browser
+      }
+    }
+
+    appMobile = container 'Aplicativo Mobile' {
+      technology 'React Native'
+      description 'App usado por visitantes e clientes com as mesmas funcionalidades da web, otimizado para uso mobile'
+      style {
+        shape mobile
+      }
+    }
+
+    backofficeApp = container 'Painel BackOffice' {
+      technology 'React + Vite'
+      description 'SPA usada por administradores para gestao e moderacao da plataforma'
+      style {
+        shape browser
+      }
+    }
+
+    api = container 'API de Aplicacao' {
+      technology 'Node.js + Express + Prisma'
+      description '
+        Expoe via REST as regras de negocio de catalogo, colecao, grupos, chat,
+        perfil, pagamentos e administracao. Autentica requisicoes via JWT
+      '
+
+      modAcessoPublico = componente 'Modulo de Acesso Publico' {
+        #painel-publico
+        description 'Home com destaques, busca global e FAQ'
+      }
+
+      modAutenticacao = componente 'Modulo de Autenticacao' {
+        #painel-publico
+        description '
+          Login, cadastro e recuperacao de senha; emissao e validacao de tokens
+          JWT usados pelos demais modulos e pelo servico de tempo real
+        '
+      }
+
+      modColecao = componente 'Modulo de Colecao' {
+        #colecao
+        description 'Dashboard do cliente, albuns, cartas, status (possuo/faltante/repetida), progresso e busca de cartas'
+      }
+
+      modComunidade = componente 'Modulo de Comunidade' {
+        #comunidade
+        description 'Grupos, historico de chat em grupo, moderacao e denuncia de mensagens'
+      }
+
+      modChatPessoal = componente 'Modulo de Chat Pessoal' {
+        #chat
+        description 'Historico de conversas privadas entre colecionadores e moderacao de contatos'
+      }
+
+      modPerfil = componente 'Modulo de Perfil' {
+        #perfil
+        description 'Dados de perfil, vitrine de conquistas, privacidade e exclusao da conta'
+      }
+
+      modNotificacoes = componente 'Modulo de Notificacoes e Favoritos' {
+        #notificacoes
+        description 'Central de notificacoes internas e itens favoritados (albuns, cartas, grupos)'
+      }
+
+      modPagamentos = componente 'Modulo de Pagamentos e Pedidos' {
+        #marketplace
+        description '
+          Checkout do marketplace, assinatura do plano PRO e acompanhamento de
+          pedidos, integrando com o gateway de pagamento e a transportadora terceirizada
+        '
+      }
+
+      modAdministracao = componente 'Modulo de Administracao' {
+        #backoffice
+        description 'Dashboard gerencial, gestao de usuarios, catalogo, comunidade, relatorios e auditoria'
+      }
+    }
+
+    msgTempoReal = container 'Servico de Mensageria em Tempo Real' {
+      technology 'Node.js + WebSocket'
+      description 'Entrega mensagens de chat pessoal e de grupo em tempo real; conexao autenticada via JWT'
+      style {
+        shape queue
+      }
+    }
+
+    bancoDados = container 'Banco de Dados' {
+      technology 'PostgreSQL'
+      description '
+        Armazena usuarios, cartas, albuns, colecoes, grupos, mensagens,
+        notificacoes, favoritos, pagamentos e assinaturas. Acessado via Prisma ORM
+      '
+      style {
+        shape storage
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Sistemas externos (C4 Nivel 1 e 2)
+  // ---------------------------------------------------------------
+
+  gatewayPagamento = sistemaExterno 'Gateway de Pagamento' {
+    description 'Provedor externo (ex: Stripe/Mercado Pago) que processa pagamentos de compras no marketplace e assinaturas do plano PRO'
+  }
+
+  transportadora = sistemaExterno 'Transportadora' {
+    description 'Empresa terceirizada responsavel pela entrega fisica das cartas compradas no marketplace'
+  }
+
+  // ---------------------------------------------------------------
+  // Relacionamentos (C4 Nivel 1, 2 e 3)
+  // ---------------------------------------------------------------
+
+  visitante -> appWeb 'Explora destaques, busca conteudo, cria conta e faz login' 'HTTPS'
+  visitante -> appMobile 'Explora destaques, busca conteudo, cria conta e faz login' 'HTTPS'
+
+  cliente -> appWeb 'Gerencia colecao, participa de grupos, conversa em tempo real, compra/vende cartas e configura o proprio perfil' 'HTTPS'
+  cliente -> appMobile 'Gerencia colecao, participa de grupos, conversa em tempo real, compra/vende cartas e configura o proprio perfil' 'HTTPS'
+
+  vendedor -> appWeb 'Cria e gerencia anuncios, propostas e metricas de venda' 'HTTPS'
+  vendedor -> appMobile 'Cria e gerencia anuncios, propostas e metricas de venda' 'HTTPS'
+
+  administrador -> backofficeApp 'Administra usuarios, catalogo, comunidade e configuracoes da plataforma' 'HTTPS'
+
+  appWeb -> api 'Consome' 'JSON/HTTPS, JWT no header Authorization'
+  appMobile -> api 'Consome' 'JSON/HTTPS, JWT no header Authorization'
+  backofficeApp -> api 'Consome' 'JSON/HTTPS, JWT no header Authorization'
+
+  appWeb -> msgTempoReal 'Troca mensagens' 'WebSocket, autenticado via JWT'
+  appMobile -> msgTempoReal 'Troca mensagens' 'WebSocket, autenticado via JWT'
+
+  msgTempoReal -> modAutenticacao 'Valida token JWT da conexao'
+  msgTempoReal -> bancoDados 'Persiste mensagens' 'SQL via Prisma ORM'
+
+  modAcessoPublico -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modAutenticacao -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modColecao -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modComunidade -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modChatPessoal -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modPerfil -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modNotificacoes -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modPagamentos -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+  modAdministracao -> bancoDados 'Le, grava e consulta' 'SQL via Prisma ORM'
+
+  modPagamentos -> gatewayPagamento 'Processa pagamentos e assinaturas via' 'HTTPS/Webhook'
+  modPagamentos -> transportadora 'Solicita entrega das cartas compradas via'
+}
+
+views {
+
+  // ===============================================================
+  // VISOES ESTRUTURAIS (base dos diagramas de atividade)
+  // ===============================================================
+
+  view index {
+    title 'CromoCard - Contexto (C4 Nivel 1)'
+    description '''
+      Atores e sistemas externos que interagem com a plataforma,
+      conforme o Diagrama 1 do documento DIAGRAMAS_C4.
+    '''
+
+    include *
+  }
+
+  view containers of cromocard {
+    title 'CromoCard - Containers (C4 Nivel 2)'
+
+    include *
+  }
+
+  view componentes of cromocard.api {
+    title 'CromoCard - Componentes da API (C4 Nivel 3)'
+
+    include *,
+      appWeb,
+      appMobile,
+      backofficeApp,
+      msgTempoReal,
+      bancoDados,
+      gatewayPagamento,
+      transportadora
+  }
+
+  // ===============================================================
+  // DIAGRAMAS DE ATIVIDADE - FLUXO PRINCIPAL DE CADA CASO DE USO
+  //
+  // Convencao: o passo parte do ator, atravessa o frontend (Aplicacao Web,
+  // que possui as mesmas funcionalidades do Aplicativo Mobile conforme o
+  // Diagrama 2), chega ao modulo responsavel da API e, quando o caso de uso
+  // exige persistencia ou consulta, ao Banco de Dados.
+  // ===============================================================
+
+  // ---------------------------------------------------------------
+  // 1. PAINEL PUBLICO (CCD001 a CCD006)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd001_visualizar_destaques {
+    title 'CCD001 - Visualizar Destaques'
+    description '''
+      **Ator:** Visitante
+      **Pre-condicao:** o visitante deve acessar a URL base da aplicacao.
+      **Fluxo alternativo:** nao mapeado no caso de uso.
+    '''
+
+    visitante -> appWeb '1. acessa a tela Home da aplicacao'
+    appWeb -> modAcessoPublico '2. solicita destaques, cartas e noticias'
+    modAcessoPublico -> bancoDados '2. carrega os itens em destaque'
+    modAcessoPublico -> appWeb '2. retorna os carrosseis'
+    appWeb -> visitante '2. apresenta carrosseis de destaques, cartas e noticias'
+    visitante -> appWeb '3. navega pelas categorias e itens em destaque'
+  }
+
+  dynamic view ccd002_buscar_global {
+    title 'CCD002 - Buscar Global'
+    description '''
+      **Ator:** Visitante
+      **Pre-condicao:** estar na tela Home ou com a barra de busca visivel.
+      **Fluxo alternativo:** caso a busca nao retorne nenhum resultado, exibir a mensagem
+      "Nenhum resultado encontrado para o termo pesquisado".
+    '''
+
+    visitante -> appWeb '1. seleciona a barra de busca global'
+    appWeb -> visitante '2. habilita o campo para digitacao'
+    visitante -> appWeb '3. informa o termo desejado e submete a busca'
+    appWeb -> modAcessoPublico '4. envia o termo pesquisado'
+    modAcessoPublico -> bancoDados '4. valida o termo e realiza a consulta'
+    modAcessoPublico -> appWeb '5. retorna os resultados encontrados'
+    appWeb -> visitante '5. apresenta os resultados na tela'
+  }
+
+  dynamic view ccd003_criar_conta {
+    title 'CCD003 - Criar Conta'
+    description '''
+      **Ator:** Visitante
+      **Pre-condicao:** estar na tela Home ou com a barra de busca visivel.
+      **Fluxo alternativo:** conforme registrado no caso de uso, exibir mensagem quando a
+      consulta nao retorna resultado.
+    '''
+
+    visitante -> appWeb '1. seleciona a opcao Cadastrar'
+    appWeb -> visitante '2. solicita os dados de cadastro e a selecao do tipo de usuario'
+    visitante -> appWeb '3. informa os campos solicitados e aceita os termos de uso'
+    appWeb -> modAutenticacao '3. envia os dados de cadastro'
+    modAutenticacao -> bancoDados '4. valida os campos preenchidos e a disponibilidade do e-mail'
+    modAutenticacao -> bancoDados '5. registra o usuario'
+    modAutenticacao -> appWeb '5. confirma o cadastro'
+    appWeb -> visitante '5. exibe mensagem de sucesso'
+  }
+
+  dynamic view ccd004_realizar_login {
+    title 'CCD004 - Realizar Login'
+    description '''
+      **Ator:** Visitante
+      **Pre-condicao:** possuir cadastro ativo e estar na tela de Login.
+      **Fluxo alternativo:** caso as credenciais nao coincidam com a base de dados,
+      emitir a mensagem de erro "E-mail ou senha incorretos".
+    '''
+
+    visitante -> appWeb '1. acessa a tela de Login'
+    appWeb -> visitante '2. apresenta os campos de credenciais e opcoes de login social'
+    visitante -> appWeb '3. informa e-mail e senha e clica em entrar'
+    appWeb -> modAutenticacao '3. envia as credenciais'
+    modAutenticacao -> bancoDados '4. valida os campos preenchidos e o e-mail informado'
+    modAutenticacao -> appWeb '5. inicia a sessao e emite o token JWT'
+    appWeb -> cliente '5. redireciona para a Dashboard do Painel Cliente'
+  }
+
+  dynamic view ccd005_central_ajuda_faq {
+    title 'CCD005 - Acessar Central de Ajuda (FAQ)'
+    description '''
+      **Ator:** Visitante
+      **Pre-condicao:** nenhuma.
+      **Fluxo alternativo:** nenhum comportamento alternativo critico mapeado.
+    '''
+
+    visitante -> appWeb '1. clica no link Central de Ajuda / FAQ no rodape'
+    appWeb -> modAcessoPublico '2. solicita os topicos de ajuda'
+    modAcessoPublico -> bancoDados '2. carrega a lista de topicos e perguntas frequentes'
+    modAcessoPublico -> appWeb '2. retorna as perguntas frequentes'
+    visitante -> appWeb '3. clica em uma pergunta de seu interesse'
+    appWeb -> visitante '4. expande o card revelando a resposta completa e os links uteis'
+  }
+
+  dynamic view ccd006_recuperar_senha {
+    title 'CCD006 - Recuperar Senha'
+    description '''
+      **Ator:** Visitante
+      **Pre-condicao:** estar na tela de Login e selecionar a opcao de recuperacao.
+      **Fluxo alternativo:** caso o e-mail nao possua formato valido, emitir mensagem de erro.
+      Por seguranca, nao informar se o e-mail nao existe na base, apenas exibir mensagem
+      generica de envio.
+    '''
+
+    visitante -> appWeb '1. seleciona a opcao Esqueci minha senha'
+    appWeb -> visitante '2. solicita o preenchimento do e-mail cadastrado'
+    visitante -> appWeb '3. informa o e-mail solicitado'
+    appWeb -> modAutenticacao '3. envia o e-mail informado'
+    modAutenticacao -> bancoDados '4. verifica se o e-mail existe na base de dados'
+    modAutenticacao -> appWeb '5. envia o link de redefinicao para o e-mail'
+    appWeb -> visitante '5. exibe a confirmacao na tela'
+  }
+
+  // ---------------------------------------------------------------
+  // 2. PAINEL CLIENTE - DASHBOARD, ALBUNS E CARTAS (CCD007 a CCD023)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd007_visualizar_resumo_colecao {
+    title 'CCD007 - Visualizar Resumo da Colecao'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela de Dashboard.
+      **Fluxo alternativo:** caso o usuario nao possua nenhum item cadastrado, exibir os
+      contadores zerados com atalho para "Adicionar Primeiro Album".
+    '''
+
+    cliente -> appWeb '1. acessa o Painel Cliente (Dashboard)'
+    appWeb -> modColecao '1. solicita o resumo da colecao'
+    modColecao -> bancoDados '2. consulta e calcula total de albuns ativos, cartas registradas e percentual medio de completude'
+    modColecao -> appWeb '3. retorna os indicadores consolidados'
+    appWeb -> cliente '3. apresenta os indicadores em cards visuais'
+  }
+
+  dynamic view ccd008_listar_album {
+    title 'CCD008 - Listar Album'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar logado e selecionar a opcao "Meus Albuns".
+      **Fluxo alternativo:** sem albuns adicionados, apresentar tela informativa com botao
+      direcionando para o Catalogo Global.
+    '''
+
+    cliente -> appWeb '1. clica na opcao Meus Albuns do menu principal'
+    appWeb -> modColecao '1. solicita os albuns do usuario'
+    modColecao -> bancoDados '2. consulta os albuns ativos do cliente'
+    modColecao -> appWeb '3. retorna a lista de albuns'
+    appWeb -> cliente '3. renderiza a lista com capa, titulo e barra de progresso individual'
+  }
+
+  dynamic view ccd009_buscar_album {
+    title 'CCD009 - Buscar Album'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar na tela "Meus Albuns" com a barra de pesquisa interna visivel.
+      **Fluxo alternativo:** sem albuns adicionados, apresentar tela informativa com botao
+      direcionando para o Catalogo Global.
+    '''
+
+    cliente -> appWeb '1. digita o nome ou ano do album no campo de busca interno'
+    appWeb -> modColecao '2. solicita a filtragem dos albuns'
+    modColecao -> bancoDados '2. filtra os albuns do cliente'
+    modColecao -> appWeb '2. retorna a listagem filtrada em tempo real'
+    cliente -> appWeb '3. seleciona o album desejado nos resultados filtrados'
+  }
+
+  dynamic view ccd010_solicitar_album {
+    title 'CCD010 - Solicitar Album'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** preencher o formulario de solicitacoes dentro da area de biblioteca.
+      **Fluxo alternativo:** sem albuns adicionados, apresentar tela informativa com botao
+      direcionando para o Catalogo Global.
+    '''
+
+    cliente -> appWeb '1. clica na opcao Solicitar cadastro de album'
+    appWeb -> cliente '2. exibe formulario solicitando Titulo, Editora/Ano e descricao opcional'
+    cliente -> appWeb '3. preenche os campos obrigatorios e confirma o envio'
+    appWeb -> modColecao '3. envia a solicitacao'
+    modColecao -> bancoDados '4. grava a requisicao na tabela de pendencias para auditoria do BackOffice'
+    modColecao -> appWeb '4. confirma o registro'
+    appWeb -> cliente '4. emite alerta de sucesso'
+  }
+
+  dynamic view ccd011_remover_album {
+    title 'CCD011 - Remover Album'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** selecionar a opcao de remocao nas configuracoes do album.
+      **Fluxo alternativo:** caso o usuario clique em "Cancelar" no modal de confirmacao, o
+      sistema fecha o pop-up sem realizar nenhuma alteracao nos dados.
+    '''
+
+    cliente -> appWeb '1. clica no icone de opcoes do album e seleciona Remover Album'
+    appWeb -> cliente '2. abre modal de confirmacao alertando que todo o progresso sera perdido'
+    cliente -> appWeb '3. clica no botao de confirmacao definitiva'
+    appWeb -> modColecao '3. envia a confirmacao de remocao'
+    modColecao -> bancoDados '4. exclui os vinculos logicos do album'
+    modColecao -> appWeb '4. confirma a exclusao'
+    appWeb -> cliente '4. recarrega a listagem atualizada'
+  }
+
+  dynamic view ccd012_compartilhar_colecao {
+    title 'CCD012 - Compartilhar Colecao'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir uma colecao cadastrada.
+      **Fluxo alternativo:** caso a colecao esteja definida como privada, o sistema exibe
+      alerta informando que e necessario torna-la publica primeiro.
+    '''
+
+    cliente -> appWeb '1. acessa a pagina da sua colecao e seleciona a opcao Compartilhar'
+    appWeb -> modColecao '2. solicita a geracao do link'
+    modColecao -> bancoDados '2. registra o link de compartilhamento'
+    modColecao -> appWeb '2. retorna o link gerado'
+    appWeb -> cliente '2. exibe o link e as opcoes de redes sociais'
+    cliente -> appWeb '3. copia o link ou escolhe a rede social desejada'
+    appWeb -> cliente '4. confirma que o compartilhamento foi iniciado/gerado'
+  }
+
+  dynamic view ccd013_visualizar_cartas {
+    title 'CCD013 - Visualizar Cartas'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e acessar os detalhes de um album.
+      **Fluxo alternativo:** se o album nao possuir cartas mapeadas, exibir a mensagem
+      "Nenhuma carta cadastrada para este album ainda".
+    '''
+
+    cliente -> appWeb '1. seleciona um album na plataforma'
+    appWeb -> modColecao '2. solicita as cartas do album'
+    modColecao -> bancoDados '2. busca as cartas referentes ao album selecionado'
+    modColecao -> appWeb '3. retorna as cartas e seus status'
+    appWeb -> cliente '3. exibe as cartas em formato de lista ou grade'
+  }
+
+  dynamic view ccd014_marcar_carta_possuo {
+    title 'CCD014 - Marcar Carta como Possuo'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela de visualizacao de cartas do album.
+      **Fluxo alternativo:** caso haja instabilidade na conexao, o sistema informa erro ao
+      salvar e orienta tentar novamente.
+    '''
+
+    cliente -> appWeb '1. seleciona uma carta e marca a opcao Possuo'
+    appWeb -> modColecao '1. envia a alteracao de status'
+    modColecao -> modColecao '2. valida a solicitacao de alteracao de status'
+    modColecao -> bancoDados '3. atualiza o status da carta para Possuo na colecao do cliente'
+    modColecao -> bancoDados '4. recalcula o progresso do album'
+    modColecao -> appWeb '4. retorna o status e o progresso atualizados'
+    appWeb -> cliente '4. atualiza a exibicao da carta e do progresso'
+  }
+
+  dynamic view ccd015_marcar_carta_faltante {
+    title 'CCD015 - Marcar Carta como Faltante'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela de visualizacao de cartas do album.
+      **Fluxo alternativo:** o sistema mantem o botao desabilitado se a carta ja possuir o
+      status "Faltante".
+    '''
+
+    cliente -> appWeb '1. seleciona uma carta e marca a opcao Faltante'
+    appWeb -> modColecao '1. envia a alteracao de status'
+    modColecao -> bancoDados '2. atualiza o status para Faltante e zera a quantidade, se houver'
+    modColecao -> appWeb '3. retorna o novo status e o progresso do album'
+    appWeb -> cliente '3. atualiza a exibicao visual da carta e o progresso geral'
+  }
+
+  dynamic view ccd016_marcar_carta_repetida {
+    title 'CCD016 - Marcar Carta Repetida'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir pelo menos uma unidade da carta.
+      **Fluxo alternativo:** ao tentar marcar como repetida uma carta que consta como
+      faltante, o sistema converte automaticamente o status inicial para "Possuo" antes de
+      contabilizar a repeticao.
+    '''
+
+    cliente -> appWeb '1. localiza uma carta que ja possui e marca a opcao Repetida'
+    appWeb -> modColecao '1. envia a marcacao de repetida'
+    modColecao -> modColecao '2. valida se o status atual permite a acao'
+    modColecao -> bancoDados '3. incrementa o contador de repetidas'
+    modColecao -> appWeb '3. retorna o contador atualizado'
+    appWeb -> cliente '3. altera a indicacao visual da carta'
+  }
+
+  dynamic view ccd017_adicionar_quantidade {
+    title 'CCD017 - Adicionar Quantidade'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e acessando o gerenciamento da sua colecao.
+      **Fluxo alternativo:** ao inserir um valor manual invalido, o sistema bloqueia a
+      entrada, nao salva a alteracao e exibe alerta de valor incorreto.
+    '''
+
+    cliente -> appWeb '1. seleciona uma carta e clica no botao de aumentar a quantidade'
+    appWeb -> modColecao '1. envia a nova quantidade'
+    modColecao -> bancoDados '2. atualiza a quantidade registrada para a carta especifica'
+    modColecao -> appWeb '3. retorna o novo valor'
+    appWeb -> cliente '3. exibe o novo valor numerico na interface da carta'
+  }
+
+  dynamic view ccd018_remover_carta {
+    title 'CCD018 - Remover Carta'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir a carta em sua colecao.
+      **Fluxo alternativo:** ao tentar remover uma carta cuja quantidade ja e zero, o sistema
+      mantem a acao desabilitada ou emite aviso de que a acao nao e possivel.
+    '''
+
+    cliente -> appWeb '1. seleciona uma carta e aciona o botao de diminuir quantidade ou Remover'
+    appWeb -> modColecao '1. envia a remocao'
+    modColecao -> bancoDados '2. subtrai a quantidade informada'
+    modColecao -> bancoDados '3. avalia se a quantidade chegou a zero e altera o status para Faltante'
+    modColecao -> appWeb '4. retorna a colecao e o progresso atualizados'
+    appWeb -> cliente '4. atualiza a interface e o progresso da colecao'
+  }
+
+  dynamic view ccd019_visualizar_progresso {
+    title 'CCD019 - Visualizar Progresso'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir o album em sua colecao.
+      **Fluxo alternativo:** caso o album nao tenha um numero total de cartas cadastrado,
+      exibir "Progresso indisponivel".
+    '''
+
+    cliente -> appWeb '1. acessa a tela de resumo da sua colecao ou do album'
+    appWeb -> modColecao '1. solicita o progresso'
+    modColecao -> bancoDados '2. calcula a proporcao entre cartas possuidas e o total do album'
+    modColecao -> appWeb '3. retorna o percentual de conclusao'
+    appWeb -> cliente '3. renderiza a barra de progresso e o percentual correspondente'
+  }
+
+  dynamic view ccd020_compartilhar_progresso {
+    title 'CCD020 - Compartilhar Progresso'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir um album com progresso registrado.
+      **Fluxo alternativo:** caso o album esteja com 0% de progresso, o sistema exibe alerta
+      perguntando se o cliente deseja realmente compartilhar um album vazio.
+    '''
+
+    cliente -> appWeb '1. acessa o resumo do album e clica em Compartilhar Progresso'
+    appWeb -> modColecao '2. solicita a geracao das estatisticas'
+    modColecao -> bancoDados '2. consulta as estatisticas e percentuais atuais do album'
+    modColecao -> appWeb '2. gera a imagem ou link com o progresso'
+    cliente -> appWeb '3. seleciona o meio de compartilhamento (rede social, link direto)'
+    appWeb -> cliente '4. processa o compartilhamento e exibe mensagem de sucesso'
+  }
+
+  dynamic view ccd021_pesquisar_carta {
+    title 'CCD021 - Pesquisar Carta'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado.
+      **Fluxo alternativo:** se nao houver correspondencia, exibir a mensagem
+      "Nenhuma carta encontrada com os termos informados".
+    '''
+
+    cliente -> appWeb '1. insere o nome, numero ou caracteristica da carta no campo de busca'
+    appWeb -> modColecao '2. envia a consulta'
+    modColecao -> bancoDados '2. processa a consulta na base de cartas disponiveis'
+    modColecao -> appWeb '3. retorna os resultados correspondentes'
+    appWeb -> cliente '3. lista os resultados correspondentes aos termos pesquisados'
+    cliente -> appWeb '4. seleciona a carta desejada a partir dos resultados'
+  }
+
+  dynamic view ccd022_adicionar_carta {
+    title 'CCD022 - Adicionar Carta'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ter localizado a carta na plataforma.
+      **Fluxo alternativo:** ao adicionar uma carta que ja consta na colecao, o sistema
+      incrementa a quantidade automaticamente em vez de criar registro duplicado,
+      notificando o cliente da atualizacao.
+    '''
+
+    cliente -> appWeb '1. seleciona a opcao Adicionar na carta desejada'
+    appWeb -> modColecao '1. envia a inclusao da carta'
+    modColecao -> bancoDados '2. inclui a carta na colecao do cliente com quantidade inicial de 1'
+    modColecao -> bancoDados '3. recalcula o progresso do album'
+    modColecao -> appWeb '3. retorna o status e o progresso'
+    appWeb -> cliente '3. atualiza o status visual da carta na interface'
+  }
+
+  dynamic view ccd023_solicitar_cadastro_carta {
+    title 'CCD023 - Solicitar Cadastro da Carta'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ter pesquisado a carta sem encontrar o resultado.
+      **Fluxo alternativo:** ao enviar o formulario sem preencher os campos obrigatorios, o
+      sistema exibe mensagem de erro indicando os campos pendentes e mantem o formulario aberto.
+    '''
+
+    cliente -> appWeb '1. seleciona a opcao Solicitar Cadastro de Carta na tela de busca'
+    appWeb -> cliente '2. apresenta formulario para informar nome, colecao, numero e demais dados'
+    cliente -> appWeb '3. preenche os dados solicitados e confirma o envio'
+    appWeb -> modColecao '3. envia a solicitacao'
+    modColecao -> bancoDados '4. registra a solicitacao e a encaminha para analise do administrador'
+    modColecao -> appWeb '4. confirma o registro'
+    appWeb -> cliente '4. exibe mensagem de confirmacao'
+  }
+
+  // ---------------------------------------------------------------
+  // 3. BUSCA E DETALHES DE CARTAS (CCD024 a CCD038)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd024_029_buscar_cartas_por_criterio {
+    title 'CCD024 a CCD029 - Buscar Carta por Nome, Numero, Colecao, Categoria, Raridade e Idioma'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela de pesquisa de cartas.
+      **Observacao:** os casos de uso CCD024 (nome), CCD025 (numero), CCD026 (colecao),
+      CCD027 (categoria), CCD028 (raridade) e CCD029 (idioma) possuem o mesmo fluxo
+      principal, alterando apenas o criterio informado no filtro.
+      **Fluxo alternativo:** se nao houver correspondencia, exibir a mensagem
+      "Nenhuma carta encontrada com os termos informados".
+    '''
+
+    cliente -> appWeb '1. informa ou seleciona o criterio no filtro de busca (nome, numero, colecao, categoria, raridade ou idioma)'
+    appWeb -> modColecao '2. envia o criterio informado'
+    modColecao -> bancoDados '2. pesquisa/filtra as cartas correspondentes ao criterio'
+    modColecao -> appWeb '3. retorna a lista de cartas encontradas'
+    appWeb -> cliente '3. exibe a lista de cartas encontradas'
+    cliente -> appWeb '4. seleciona a carta desejada na lista de resultados'
+  }
+
+  dynamic view ccd030_visualizar_detalhes {
+    title 'CCD030 - Visualizar Detalhes'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ter localizado a carta atraves da busca.
+      **Fluxo alternativo:** nao mapeado no caso de uso.
+    '''
+
+    cliente -> appWeb '1. seleciona a carta desejada na lista de resultados'
+    appWeb -> modColecao '2. solicita os detalhes da carta'
+    modColecao -> bancoDados '2. carrega caracteristicas, imagens e anuncios disponiveis'
+    modColecao -> appWeb '2. retorna os detalhes da carta'
+    appWeb -> cliente '2. apresenta a tela de detalhes da carta'
+    cliente -> appWeb '3. navega pelas informacoes apresentadas'
+  }
+
+  dynamic view ccd031_visualizar_informacoes_carta {
+    title 'CCD031 - Visualizar Informacoes da Carta'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela de detalhes da carta.
+      **Fluxo alternativo:** nao mapeado no caso de uso.
+    '''
+
+    cliente -> appWeb '1. acessa a secao de informacoes da carta na tela de detalhes'
+    appWeb -> modColecao '2. solicita os dados de identificacao'
+    modColecao -> bancoDados '2. consulta nome, numero, colecao, categoria, raridade e idioma'
+    modColecao -> appWeb '2. retorna os dados de identificacao'
+    appWeb -> cliente '2. apresenta os dados de identificacao da carta'
+    cliente -> appWeb '3. consulta as informacoes apresentadas'
+  }
+
+  dynamic view ccd032_buscar_estado_carta {
+    title 'CCD032 - Buscar por Estado da Carta (funcionalidade futura)'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela de pesquisa de cartas.
+      **Fluxo alternativo:** se nao houver cartas para o estado selecionado, exibir a
+      mensagem "Nenhuma carta encontrada com os termos informados".
+    '''
+
+    cliente -> appWeb '1. seleciona o estado de conservacao desejado no filtro de busca'
+    appWeb -> modColecao '2. envia o filtro de estado de conservacao'
+    modColecao -> bancoDados '2. filtra as cartas que correspondem ao estado selecionado'
+    modColecao -> appWeb '3. retorna a lista de cartas encontradas'
+    appWeb -> cliente '3. exibe a lista de cartas encontradas'
+    cliente -> appWeb '4. seleciona a carta desejada na lista de resultados'
+  }
+
+  dynamic view ccd033_buscar_por_vendedor {
+    title 'CCD033 - Buscar por Vendedor'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar na tela de pesquisa do marketplace.
+      **Observacao:** os casos de uso CCD033 e CCD067 descrevem a mesma funcionalidade, mantive neste diagrama apenas o 033 pois ele vem primeiro na ordem.
+      **Fluxo alternativo:** caso nenhum vendedor seja encontrado, exibir
+      "Nenhum vendedor encontrado"; caso o vendedor nao possua anuncios ativos, exibir
+      "Este vendedor nao possui anuncios ativos".
+    '''
+
+    cliente -> appWeb '1. acessa a secao de busca do marketplace'
+    cliente -> appWeb '2. seleciona a opcao de busca por vendedor e informa o nome'
+    appWeb -> modPagamentos '3. envia o nome do vendedor informado'
+    modPagamentos -> bancoDados '4. busca os vendedores correspondentes ao nome informado'
+    modPagamentos -> bancoDados '5. localiza os anuncios ativos do vendedor selecionado'
+    modPagamentos -> appWeb '6. retorna os anuncios encontrados'
+    appWeb -> cliente '6. exibe os anuncios encontrados'
+  }
+
+  dynamic view ccd034_buscar_categoria_album {
+    title 'CCD034 - Buscar Categoria do Album'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na tela da sua colecao de albuns.
+      **Fluxo alternativo:** caso nao possua figurinhas na categoria selecionada, exibir
+      "Nenhuma figurinha encontrada para esta categoria".
+    '''
+
+    cliente -> appWeb '1. acessa a opcao de filtros e seleciona uma categoria, selecao ou time'
+    appWeb -> modColecao '2. envia a selecao de filtro'
+    modColecao -> bancoDados '2. processa a selecao e aplica o filtro na colecao do cliente'
+    modColecao -> appWeb '3. retorna as figurinhas correspondentes'
+    appWeb -> cliente '3. exibe apenas as figurinhas da categoria/time selecionado'
+  }
+
+  dynamic view ccd035_resetar_progresso_album {
+    title 'CCD035 - Resetar Progresso do Album'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir um album com pelo menos uma carta marcada.
+      **Fluxo alternativo:** caso o usuario cancele a confirmacao de reset, o sistema cancela
+      a operacao e mantem o progresso atual inalterado.
+    '''
+
+    cliente -> appWeb '1. acessa a tela Album e seleciona o album desejado'
+    cliente -> appWeb '2. seleciona a opcao Resetar Progresso'
+    appWeb -> cliente '3. exibe mensagem de confirmacao informando que todas as marcacoes e quantidades serao removidas'
+    cliente -> appWeb '4. confirma a operacao'
+    appWeb -> modColecao '4. envia a confirmacao do reset'
+    modColecao -> bancoDados '5. remove todas as marcacoes e quantidades e atualiza o progresso para 0%'
+    modColecao -> appWeb '6. confirma o reset'
+    appWeb -> cliente '6. exibe mensagem de sucesso'
+  }
+
+  dynamic view ccd036_adicionar_carta_portfolio {
+    title 'CCD036 - Adicionar Carta ao Portfolio'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir pelo menos um album cadastrado.
+      **Fluxo alternativo:** se a carta ja estiver registrada, o sistema informa que o item ja
+      existe e oferece a opcao de atualizar a quantidade; se nao for encontrada na base, o
+      sistema oferece a opcao de "Solicitar Cadastro da Carta".
+    '''
+
+    cliente -> appWeb '1. acessa a tela Album ou a tela Cadastro de Carta'
+    cliente -> appWeb '2. localiza a carta desejada por pesquisa, escaneamento de imagem ou codigo'
+    appWeb -> modColecao '2. envia os dados da busca'
+    modColecao -> bancoDados '3. consulta a carta na base'
+    modColecao -> appWeb '3. retorna nome, numero, colecao e imagem da carta encontrada'
+    cliente -> appWeb '4. seleciona a opcao Adicionar ao Portfolio e informa a quantidade'
+    appWeb -> modColecao '4. envia a inclusao e a quantidade'
+    modColecao -> bancoDados '5. registra a carta com status possuo e a quantidade informada'
+    modColecao -> bancoDados '6. atualiza o progresso do album correspondente'
+    appWeb -> cliente '6. exibe mensagem de sucesso'
+  }
+
+  dynamic view ccd037_buscar_categoria_card {
+    title 'CCD037 - Buscar Categoria do Card'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e acessar a area de busca ou inventario de cards.
+      **Fluxo alternativo:** caso nenhum card corresponda, apresentar
+      "Nenhum card encontrado com estes elementos" e sugerir limpar os filtros.
+    '''
+
+    cliente -> appWeb '1. informa os elementos especificos (nome, raridade, atributos) no campo de pesquisa'
+    appWeb -> modColecao '2. envia os parametros de busca'
+    modColecao -> modColecao '2. valida os parametros de busca informados'
+    modColecao -> bancoDados '3. consulta os cards da colecao correspondentes'
+    modColecao -> appWeb '3. retorna os cards encontrados'
+    appWeb -> cliente '3. exibe os cards correspondentes aos elementos pesquisados'
+  }
+
+  dynamic view ccd038_acessibilidade {
+    title 'CCD038 - Acessibilidade'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar navegando na plataforma e acessar o menu de configuracoes de acessibilidade.
+      **Fluxo alternativo:** ao desativar todos os recursos, o sistema restaura o tema visual
+      padrao da plataforma e encerra o narrador de tela.
+    '''
+
+    cliente -> appWeb '1. acessa o menu de configuracoes e entra em Acessibilidade'
+    appWeb -> cliente '2. exibe as opcoes de Narrador de Tela, Modo Daltonismo e Alto Contraste'
+    cliente -> appWeb '3. seleciona e ativa os recursos desejados'
+    appWeb -> cliente '4. aplica as alteracoes visuais de contraste e cores imediatamente na interface'
+    appWeb -> cliente '5. ativa o servico de conversao de texto em audio para os elementos focados'
+  }
+
+  // ---------------------------------------------------------------
+  // 4. GRUPOS DA COMUNIDADE (CCD039 a CCD044)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd039_explorar_entrar_grupos {
+    title 'CCD039 - Explorar e Entrar em Grupos'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado no sistema.
+      **Fluxo alternativo:** se o grupo for fechado, o sistema envia solicitacao de entrada ao
+      administrador e informa que esta pendente de aprovacao; se a busca nao retornar
+      resultados, informa que nenhum grupo foi encontrado e sugere criar um novo grupo.
+    '''
+
+    cliente -> appWeb '1. acessa a tela Listagem de Grupos'
+    cliente -> appWeb '2. pesquisa grupos por nome ou tema no campo de busca'
+    appWeb -> modComunidade '2. envia o termo pesquisado'
+    modComunidade -> bancoDados '3. consulta os grupos correspondentes'
+    modComunidade -> appWeb '3. retorna nome, descricao, quantidade de membros e tipo (aberto ou fechado)'
+    cliente -> appWeb '4. seleciona um grupo de interesse'
+    appWeb -> modComunidade '4. envia a solicitacao de entrada'
+    modComunidade -> bancoDados '5. adiciona o usuario ao grupo imediatamente, quando o grupo e aberto'
+    appWeb -> cliente '5. exibe a tela do grupo'
+    cliente -> appWeb '6. passa a participar do grupo'
+  }
+
+  dynamic view ccd040_denunciar_mensagem_grupo {
+    title 'CCD040 - Denunciar Mensagem no Grupo'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ser membro do grupo onde a mensagem foi enviada.
+      **Fluxo alternativo:** se o usuario cancelar a denuncia antes de confirmar, o sistema
+      descarta o formulario e retorna a tela do grupo sem registrar a denuncia.
+    '''
+
+    cliente -> appWeb '1. acessa a tela do Grupo e localiza a mensagem que deseja denunciar'
+    cliente -> appWeb '2. seleciona a opcao Denunciar Mensagem no menu de acoes da mensagem'
+    appWeb -> cliente '3. exibe formulario com os motivos (spam, conteudo ofensivo, golpe, assedio, outro)'
+    cliente -> appWeb '4. seleciona o motivo e, opcionalmente, adiciona uma descricao'
+    cliente -> appWeb '5. confirma o envio da denuncia'
+    appWeb -> modComunidade '5. envia a denuncia'
+    modComunidade -> bancoDados '6. registra a denuncia com status Pendente'
+    modComunidade -> modNotificacoes '6. notifica o administrador do grupo e a equipe de moderacao'
+    modComunidade -> appWeb '7. confirma o registro'
+    appWeb -> cliente '7. exibe mensagem confirmando que a denuncia foi registrada'
+  }
+
+  dynamic view ccd041_silenciar_notificacoes_grupo {
+    title 'CCD041 - Silenciar Notificacoes de Grupo'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ser membro do grupo que deseja silenciar.
+      **Fluxo alternativo:** ao selecionar "Reativar Notificacoes", o sistema reativa as
+      notificacoes imediatamente e remove o indicador de silenciamento.
+    '''
+
+    cliente -> appWeb '1. acessa a tela do Grupo e seleciona as configuracoes do grupo'
+    cliente -> appWeb '2. seleciona a opcao Silenciar Notificacoes'
+    appWeb -> cliente '3. exibe as opcoes de periodo (8 horas, 1 semana, ate eu reativar)'
+    cliente -> appWeb '4. escolhe o periodo desejado'
+    appWeb -> modNotificacoes '4. envia a preferencia de silenciamento'
+    modNotificacoes -> bancoDados '5. desativa as notificacoes do grupo pelo periodo selecionado'
+    modNotificacoes -> appWeb '5. confirma a alteracao'
+    appWeb -> cliente '5. exibe indicador visual de que o grupo esta silenciado'
+  }
+
+  dynamic view ccd042_pesquisar_historico_grupo {
+    title 'CCD042 - Pesquisar no Historico do Grupo'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ser membro do grupo.
+      **Fluxo alternativo:** caso a pesquisa nao retorne resultados, o sistema informa que
+      nenhum conteudo correspondente foi encontrado no historico do grupo.
+    '''
+
+    cliente -> appWeb '1. acessa a tela do Grupo e seleciona a opcao Pesquisar'
+    cliente -> appWeb '2. digita o termo de busca no campo de pesquisa'
+    appWeb -> modComunidade '2. envia o termo de busca'
+    modComunidade -> bancoDados '3. busca no historico por texto das mensagens, nomes de cartas e anuncios'
+    modComunidade -> appWeb '4. retorna os resultados com termo, data e autor'
+    appWeb -> cliente '4. exibe os resultados encontrados com destaque no termo pesquisado'
+    cliente -> appWeb '5. seleciona um resultado para navegar ate a mensagem'
+    appWeb -> cliente '6. rola a conversa ate a mensagem correspondente e a destaca visualmente'
+  }
+
+  dynamic view ccd043_criar_administrar_grupo {
+    title 'CCD043 - Criar e Administrar Grupo'
+    description '''
+      **Ator:** Cliente (Administrador do Grupo)
+      **Pre-condicao:** estar autenticado no sistema.
+      **Fluxo alternativo:** sem nome e tipo de acesso preenchidos, o sistema exibe validacao
+      e impede a criacao; ao tentar excluir o grupo, o sistema solicita confirmacao antes da
+      exclusao definitiva.
+    '''
+
+    cliente -> appWeb '1. acessa a tela Listagem de Grupos e seleciona a opcao Criar Grupo'
+    cliente -> appWeb '2. preenche nome, descricao, imagem de capa e tipo de acesso (aberto ou fechado)'
+    cliente -> appWeb '3. confirma a criacao do grupo'
+    appWeb -> modComunidade '3. envia os dados do grupo'
+    modComunidade -> bancoDados '4. cria o grupo e define o usuario como Administrador'
+    modComunidade -> appWeb '4. retorna o grupo criado'
+    appWeb -> cliente '4. exibe a tela do grupo recem-criado'
+    appWeb -> cliente '5. disponibiliza as opcoes de administracao: aprovar/recusar solicitacoes, remover membros, promover administradores, editar e excluir o grupo'
+  }
+
+  dynamic view ccd044_interagir_chat_grupo {
+    title 'CCD044 - Interagir no Chat do Grupo'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ser membro do grupo.
+      **Fluxo alternativo:** havendo mensagens fixadas pelo administrador, o sistema exibe
+      indicador no topo do chat; se o conteudo violar as regras do grupo, o sistema bloqueia
+      o envio e exibe mensagem informando a violacao.
+    '''
+
+    cliente -> appWeb '1. acessa a tela do Grupo'
+    appWeb -> modComunidade '2. solicita o historico do grupo'
+    modComunidade -> bancoDados '2. carrega o historico de mensagens em ordem cronologica'
+    modComunidade -> appWeb '2. retorna o historico'
+    appWeb -> cliente '2. exibe o historico de mensagens do grupo'
+    cliente -> appWeb '3. digita uma mensagem no campo de texto e envia'
+    appWeb -> msgTempoReal '4. publica a mensagem no chat do grupo'
+    msgTempoReal -> bancoDados '4. persiste a mensagem'
+    msgTempoReal -> appWeb '4. exibe a mensagem para todos os membros em tempo real'
+    cliente -> appWeb '5. compartilha imagens, cartas da colecao, anuncios do marketplace ou cria enquetes'
+    appWeb -> msgTempoReal '6. envia o conteudo compartilhado'
+    msgTempoReal -> appWeb '6. processa o tipo de conteudo e o exibe formatado (preview de carta, card de anuncio, enquete)'
+  }
+
+  // ---------------------------------------------------------------
+  // 5. CHAT PESSOAL (CCD045 a CCD047)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd045_responder_mensagem {
+    title 'CCD045 - Responder Mensagem Especifica'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir uma conversa ativa com outro usuario.
+      **Fluxo alternativo:** ao enviar resposta sem conteudo, o sistema impede o envio e exibe
+      "Digite uma mensagem antes de enviar"; se a mensagem original nao estiver mais
+      disponivel, o sistema informa e cancela a referencia.
+    '''
+
+    cliente -> appWeb '1. acessa uma conversa e seleciona a mensagem que deseja responder'
+    appWeb -> modChatPessoal '2. identifica a mensagem selecionada'
+    modChatPessoal -> appWeb '2. habilita a opcao de resposta'
+    cliente -> appWeb '3. seleciona a opcao Responder'
+    appWeb -> cliente '4. exibe a mensagem selecionada como referencia no campo de resposta'
+    cliente -> appWeb '5. digita a resposta e seleciona a opcao Enviar'
+    appWeb -> msgTempoReal '6. envia a mensagem vinculada a mensagem original'
+    msgTempoReal -> bancoDados '6. persiste a mensagem vinculada'
+    msgTempoReal -> appWeb '6. atualiza a conversa'
+  }
+
+  dynamic view ccd046_visualizar_mensagens {
+    title 'CCD046 - Visualizar Mensagens'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir acesso a area de mensagens.
+      **Fluxo alternativo:** sem conversas, exibir "Nenhuma conversa encontrada"; em falha de
+      carregamento, informar que nao foi possivel carregar as mensagens.
+    '''
+
+    cliente -> appWeb '1. acessa a area de mensagens'
+    appWeb -> modChatPessoal '2. solicita as conversas do usuario'
+    modChatPessoal -> bancoDados '2. consulta as conversas disponiveis'
+    modChatPessoal -> appWeb '2. retorna a lista de conversas'
+    appWeb -> cliente '2. apresenta a lista de conversas disponiveis'
+    cliente -> appWeb '3. seleciona uma conversa'
+    appWeb -> modChatPessoal '4. solicita as mensagens da conversa'
+    modChatPessoal -> bancoDados '4. carrega as mensagens organizadas cronologicamente'
+    modChatPessoal -> appWeb '5. retorna as mensagens e o status de leitura'
+    appWeb -> cliente '5. exibe as mensagens e identifica visualmente as nao lidas'
+  }
+
+  dynamic view ccd047_moderar_contatos_privados {
+    title 'CCD047 - Moderar Contatos Privados'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir pelo menos um contato ou conversa privada.
+      **Fluxo alternativo:** se o usuario cancelar a confirmacao, o sistema mantem o contato
+      sem alteracoes; se o contato ja estiver bloqueado, o sistema informa o status atual e
+      disponibiliza a opcao de desbloqueio.
+    '''
+
+    cliente -> appWeb '1. acessa seus contatos ou conversas privadas'
+    appWeb -> modChatPessoal '2. solicita os contatos e opcoes de gerenciamento'
+    modChatPessoal -> bancoDados '2. consulta os contatos do usuario'
+    appWeb -> cliente '2. apresenta os contatos e as opcoes de gerenciamento'
+    cliente -> appWeb '3. seleciona um contato'
+    appWeb -> cliente '4. exibe as opcoes de moderacao disponiveis'
+    cliente -> appWeb '5. seleciona uma acao, como bloquear ou remover o contato'
+    appWeb -> cliente '6. solicita a confirmacao da acao'
+    cliente -> appWeb '7. confirma a acao'
+    appWeb -> modChatPessoal '7. envia a acao de moderacao'
+    modChatPessoal -> bancoDados '8. aplica a alteracao'
+    appWeb -> cliente '8. atualiza a lista de contatos'
+  }
+
+  // ---------------------------------------------------------------
+  // 6. PERFIL E CONFIGURACOES (CCD048 a CCD052)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd048_editar_dados_perfil {
+    title 'CCD048 - Editar Dados do Perfil'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir um perfil cadastrado.
+      **Fluxo alternativo:** com dados invalidos ou incompletos, o sistema impede o salvamento
+      e informa quais campos precisam ser corrigidos; ao cancelar a edicao, descarta as
+      alteracoes e mantem os dados anteriores.
+    '''
+
+    cliente -> appWeb '1. acessa seu perfil e seleciona a opcao Editar perfil'
+    appWeb -> modPerfil '2. solicita os dados atuais do perfil'
+    modPerfil -> bancoDados '2. consulta os dados do perfil'
+    appWeb -> cliente '2. apresenta os dados atuais em modo de edicao'
+    cliente -> appWeb '3. altera as informacoes desejadas'
+    appWeb -> modPerfil '4. envia os dados para validacao'
+    modPerfil -> modPerfil '4. valida os dados informados'
+    cliente -> appWeb '5. seleciona a opcao Salvar'
+    appWeb -> modPerfil '5. confirma o salvamento'
+    modPerfil -> bancoDados '6. atualiza os dados do perfil'
+    appWeb -> cliente '7. exibe mensagem confirmando a atualizacao'
+  }
+
+  dynamic view ccd049_vitrine_conquistas {
+    title 'CCD049 - Exibir Vitrine de Conquistas'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir um perfil cadastrado.
+      **Fluxo alternativo:** sem conquistas, exibir "Nenhuma conquista obtida"; se a conquista
+      nao estiver mais disponivel, informar que os detalhes nao podem ser exibidos.
+    '''
+
+    cliente -> appWeb '1. acessa seu perfil'
+    appWeb -> modPerfil '2. solicita as conquistas do usuario'
+    modPerfil -> bancoDados '2. identifica as conquistas obtidas'
+    modPerfil -> appWeb '3. retorna a vitrine de conquistas'
+    appWeb -> cliente '3. apresenta a vitrine de conquistas no perfil'
+    cliente -> appWeb '4. seleciona uma conquista'
+    appWeb -> cliente '5. exibe os detalhes da conquista selecionada'
+  }
+
+  dynamic view ccd050_denunciar_perfil {
+    title 'CCD050 - Denunciar Perfil'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e ter acesso ao perfil que deseja denunciar.
+      **Fluxo alternativo:** sem motivo selecionado, o sistema impede o envio e solicita a
+      selecao de um motivo; ao cancelar, encerra o processo sem registrar a denuncia.
+    '''
+
+    cliente -> appWeb '1. acessa o perfil que deseja denunciar'
+    appWeb -> cliente '2. apresenta a opcao Denunciar perfil'
+    cliente -> appWeb '3. seleciona a opcao de denuncia'
+    appWeb -> cliente '4. apresenta as categorias disponiveis para a denuncia'
+    cliente -> appWeb '5. seleciona o motivo e, se necessario, adiciona uma descricao'
+    appWeb -> modPerfil '6. envia a denuncia para validacao'
+    modPerfil -> modPerfil '6. valida as informacoes fornecidas'
+    cliente -> appWeb '7. confirma a denuncia'
+    appWeb -> modPerfil '7. confirma o envio'
+    modPerfil -> bancoDados '8. registra a denuncia'
+    appWeb -> cliente '8. informa que a denuncia foi enviada para analise'
+  }
+
+  dynamic view ccd051_configurar_privacidade_senha {
+    title 'CCD051 - Configurar Privacidade e Senha'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir uma conta ativa.
+      **Fluxo alternativo:** senha atual incorreta impede a alteracao; nova senha fora dos
+      requisitos faz o sistema informar os requisitos necessarios; ao cancelar, o sistema
+      mantem as configuracoes anteriores.
+    '''
+
+    cliente -> appWeb '1. acessa as configuracoes da conta'
+    appWeb -> cliente '2. apresenta as opcoes de privacidade e seguranca disponiveis'
+    cliente -> appWeb '3. altera suas configuracoes de privacidade'
+    appWeb -> modPerfil '4. envia as novas preferencias'
+    modPerfil -> bancoDados '4. valida e registra as novas preferencias'
+    cliente -> appWeb '5. acessa a alteracao de senha e informa a senha atual e a nova senha'
+    appWeb -> modAutenticacao '6. envia as senhas informadas'
+    modAutenticacao -> bancoDados '6. valida a senha atual e os requisitos da nova senha'
+    cliente -> appWeb '7. confirma a alteracao'
+    appWeb -> modAutenticacao '7. confirma a alteracao'
+    modAutenticacao -> bancoDados '8. atualiza a senha'
+    appWeb -> cliente '8. confirma a alteracao ao usuario'
+  }
+
+  dynamic view ccd052_exclusao_conta {
+    title 'CCD052 - Exclusao da Conta'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir uma conta ativa.
+      **Fluxo alternativo:** ao cancelar, o sistema cancela a operacao e mantem a conta ativa;
+      sem a confirmacao de seguranca, o sistema impede a exclusao e informa que a confirmacao
+      e necessaria.
+    '''
+
+    cliente -> appWeb '1. acessa as configuracoes da conta'
+    appWeb -> cliente '2. apresenta a opcao de exclusao da conta'
+    cliente -> appWeb '3. seleciona Excluir conta'
+    appWeb -> cliente '4. apresenta mensagem de confirmacao informando as consequencias da exclusao'
+    cliente -> appWeb '5. confirma a exclusao da conta'
+    appWeb -> modAutenticacao '6. solicita a autenticacao ou confirmacao de seguranca necessaria'
+    cliente -> appWeb '7. realiza a confirmacao'
+    appWeb -> modPerfil '7. envia a confirmacao de exclusao'
+    modPerfil -> bancoDados '8. exclui ou desativa a conta conforme as regras definidas'
+    modPerfil -> appWeb '8. encerra a sessao'
+    appWeb -> cliente '8. confirma o encerramento da sessao'
+  }
+
+  // ---------------------------------------------------------------
+  // 7. NOTIFICACOES E FAVORITOS (CCD053 a CCD057)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd053_visualizar_notificacoes {
+    title 'CCD053 - Visualizar Notificacoes'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir acesso a central de notificacoes.
+      **Fluxo alternativo:** sem notificacoes, exibir "Nenhuma notificacao encontrada"; se o
+      conteudo relacionado nao estiver mais disponivel, informar que nao pode ser acessado.
+    '''
+
+    cliente -> appWeb '1. acessa a central de notificacoes'
+    appWeb -> modNotificacoes '2. solicita as notificacoes do usuario'
+    modNotificacoes -> bancoDados '2. consulta as notificacoes vinculadas a conta'
+    modNotificacoes -> appWeb '3. retorna as notificacoes em ordem cronologica'
+    appWeb -> cliente '3. apresenta as notificacoes'
+    cliente -> appWeb '4. seleciona uma notificacao'
+    appWeb -> cliente '5. direciona para o conteudo relacionado, quando aplicavel'
+    appWeb -> modNotificacoes '6. informa a leitura'
+    modNotificacoes -> bancoDados '6. atualiza o status da notificacao para lida'
+  }
+
+  dynamic view ccd054_limpar_central_notificacoes {
+    title 'CCD054 - Limpar Central de Notificacoes'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir notificacoes na central.
+      **Fluxo alternativo:** ao cancelar, o sistema mantem as notificacoes sem alteracoes;
+      se nao existirem notificacoes, informa que a central ja esta vazia.
+    '''
+
+    cliente -> appWeb '1. acessa a central de notificacoes'
+    appWeb -> modNotificacoes '2. solicita as notificacoes disponiveis'
+    modNotificacoes -> bancoDados '2. consulta as notificacoes'
+    appWeb -> cliente '2. apresenta as notificacoes disponiveis'
+    cliente -> appWeb '3. seleciona a opcao Limpar notificacoes'
+    appWeb -> cliente '4. solicita a confirmacao da acao'
+    cliente -> appWeb '5. confirma a limpeza'
+    appWeb -> modNotificacoes '5. envia a confirmacao'
+    modNotificacoes -> bancoDados '6. remove as notificacoes da central'
+    appWeb -> cliente '7. atualiza a interface e informa que a central foi limpa'
+  }
+
+  dynamic view ccd055_057_favoritar_item {
+    title 'CCD055 a CCD057 - Favoritar Album, Carta ou Grupo'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e o item deve estar disponivel para visualizacao.
+      **Observacao:** os casos de uso CCD055 (album), CCD056 (carta) e CCD057 (grupo) possuem
+      o mesmo fluxo principal, alterando apenas o tipo de item favoritado.
+      **Fluxo alternativo:** ao selecionar novamente a opcao em um item ja favoritado, o
+      sistema remove o item dos favoritos e atualiza o indicador visual; item indisponivel
+      impede a operacao e o sistema informa o motivo.
+    '''
+
+    cliente -> appWeb '1. acessa o album, carta ou grupo que deseja favoritar'
+    appWeb -> cliente '2. apresenta a opcao de favoritar o item'
+    cliente -> appWeb '3. seleciona a opcao Favoritar'
+    appWeb -> modNotificacoes '3. envia a marcacao de favorito'
+    modNotificacoes -> bancoDados '4. registra o item como favorito para o usuario'
+    modNotificacoes -> appWeb '5. confirma o registro'
+    appWeb -> cliente '5. atualiza o indicador visual e confirma a acao'
+  }
+
+  // ---------------------------------------------------------------
+  // 8. BACKOFFICE ADMINISTRATIVO (CCD058 a CCD066)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd058_dashboard_gerencial {
+    title 'CCD058 - Visualizar Dashboard Gerencial'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para acessar o dashboard gerencial.
+      **Fluxo alternativo:** sem dados disponiveis, o sistema informa que nao existem dados
+      para apresentacao; filtros sem informacoes retornam aviso de que nao foram encontrados
+      dados para os filtros selecionados.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Dashboard Gerencial'
+    backofficeApp -> modAdministracao '2. solicita os dados gerenciais'
+    modAdministracao -> bancoDados '2. carrega os dados gerenciais disponiveis'
+    modAdministracao -> backofficeApp '3. retorna os principais indicadores'
+    backofficeApp -> administrador '3. apresenta os indicadores e informacoes da plataforma'
+    administrador -> backofficeApp '4. visualiza os indicadores apresentados'
+    administrador -> backofficeApp '5. seleciona um periodo ou filtro, quando disponivel'
+    backofficeApp -> modAdministracao '6. envia o filtro selecionado'
+    modAdministracao -> bancoDados '6. processa o filtro selecionado'
+    modAdministracao -> backofficeApp '7. retorna os indicadores conforme os filtros'
+    administrador -> backofficeApp '8. consulta os dados apresentados no dashboard'
+  }
+
+  dynamic view ccd059_gestao_usuarios {
+    title 'CCD059 - Gestao de Usuarios'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para a gestao de usuarios.
+      **Fluxo alternativo:** dados invalidos ou incompletos sao identificados e informados ao
+      administrador, que corrige e o sistema valida novamente; ao cancelar, o sistema retorna
+      para a lista de usuarios.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Gestao de Usuarios'
+    backofficeApp -> modAdministracao '2. solicita a lista de usuarios'
+    modAdministracao -> bancoDados '2. consulta os usuarios cadastrados'
+    backofficeApp -> administrador '2. apresenta a lista de usuarios cadastrados'
+    administrador -> backofficeApp '3. seleciona um usuario ou escolhe cadastrar um novo usuario'
+    backofficeApp -> administrador '4. apresenta os dados e as opcoes de gerenciamento'
+    administrador -> backofficeApp '5. informa ou altera os dados do usuario'
+    backofficeApp -> modAdministracao '5. envia os dados informados'
+    modAdministracao -> modAdministracao '6. valida os dados informados'
+    modAdministracao -> bancoDados '7. registra as alteracoes realizadas'
+    backofficeApp -> administrador '8. apresenta mensagem confirmando a operacao'
+  }
+
+  dynamic view ccd060_notificacao_global {
+    title 'CCD060 - Disparar Notificacao Global'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para enviar notificacoes globais.
+      **Fluxo alternativo:** campos obrigatorios nao preenchidos sao informados ao
+      administrador, que corrige e o sistema permite o envio; ao cancelar, o sistema cancela a
+      operacao sem enviar a notificacao.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Notificacao Global'
+    backofficeApp -> administrador '2. apresenta a tela para criacao da notificacao'
+    administrador -> backofficeApp '3. informa o titulo e o conteudo da notificacao'
+    backofficeApp -> modAdministracao '4. envia as informacoes preenchidas'
+    modAdministracao -> modAdministracao '4. valida as informacoes preenchidas'
+    administrador -> backofficeApp '5. confirma o envio da notificacao'
+    backofficeApp -> modAdministracao '5. confirma o disparo'
+    modAdministracao -> modNotificacoes '6. envia a notificacao para os usuarios da plataforma'
+    modAdministracao -> bancoDados '7. registra o disparo da notificacao'
+    backofficeApp -> administrador '8. informa que a notificacao foi enviada com sucesso'
+  }
+
+  dynamic view ccd061_gestao_catalogo {
+    title 'CCD061 - Gestao de Catalogo'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para gerenciar o catalogo.
+      **Fluxo alternativo:** dados invalidos sao informados para correcao e o sistema valida
+      novamente; item com vinculos que impedem a exclusao tem a remocao bloqueada com
+      informacao do motivo.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Gestao de Catalogo'
+    backofficeApp -> modAdministracao '2. solicita os itens do catalogo'
+    modAdministracao -> bancoDados '2. consulta os itens cadastrados no catalogo'
+    backofficeApp -> administrador '2. apresenta os itens cadastrados'
+    administrador -> backofficeApp '3. seleciona a opcao de cadastrar, editar ou remover um item'
+    backofficeApp -> administrador '4. apresenta o formulario ou as opcoes correspondentes'
+    administrador -> backofficeApp '5. informa ou altera os dados do item'
+    backofficeApp -> modAdministracao '5. envia os dados informados'
+    modAdministracao -> modAdministracao '6. valida os dados informados'
+    administrador -> backofficeApp '7. confirma a operacao'
+    modAdministracao -> bancoDados '8. registra a operacao realizada'
+    backofficeApp -> administrador '9. atualiza o catalogo e confirma a operacao'
+  }
+
+  dynamic view ccd062_gestao_comunidade {
+    title 'CCD062 - Gestao de Comunidade'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para gerenciar grupos.
+      **Fluxo alternativo:** dados invalidos ou incompletos sao informados para correcao e
+      revalidados; ao cancelar, o sistema encerra a operacao sem realizar alteracoes.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Gestao de Comunidade'
+    backofficeApp -> modAdministracao '2. solicita os grupos existentes'
+    modAdministracao -> bancoDados '2. consulta os grupos existentes'
+    backofficeApp -> administrador '2. apresenta os grupos existentes'
+    administrador -> backofficeApp '3. seleciona um grupo ou escolhe criar um novo grupo'
+    backofficeApp -> administrador '4. apresenta as informacoes e opcoes disponiveis'
+    administrador -> backofficeApp '5. informa ou altera os dados do grupo'
+    backofficeApp -> modAdministracao '5. envia os dados do grupo'
+    modAdministracao -> modAdministracao '6. valida os dados informados'
+    administrador -> backofficeApp '7. confirma a operacao'
+    modAdministracao -> bancoDados '8. registra as alteracoes'
+    backofficeApp -> administrador '9. atualiza a lista de grupos e confirma a operacao'
+  }
+
+  dynamic view ccd063_exportar_relatorios {
+    title 'CCD063 - Exportar Relatorios Gerenciais'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para gerar relatorios gerenciais.
+      **Fluxo alternativo:** filtros sem dados geram aviso de que nao foram encontrados dados;
+      ao cancelar a exportacao, o sistema encerra a operacao sem gerar o arquivo.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao de relatorios gerenciais'
+    backofficeApp -> administrador '2. apresenta os relatorios e filtros disponiveis'
+    administrador -> backofficeApp '3. seleciona o tipo de relatorio e os filtros desejados'
+    backofficeApp -> modAdministracao '4. envia os filtros selecionados'
+    modAdministracao -> bancoDados '4. processa os filtros selecionados'
+    modAdministracao -> backofficeApp '5. apresenta os dados do relatorio'
+    administrador -> backofficeApp '6. seleciona a opcao Exportar e confirma a operacao'
+    backofficeApp -> modAdministracao '7. solicita a geracao do arquivo'
+    modAdministracao -> backofficeApp '7. gera o arquivo do relatorio'
+    backofficeApp -> administrador '8. disponibiliza o arquivo para o administrador'
+  }
+
+  dynamic view ccd064_aprovar_solicitacoes {
+    title 'CCD064 - Aprovar Solicitacoes'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e existir pelo menos uma solicitacao pendente
+      (ex.: solicitacao de album CCD010 ou de cadastro de carta CCD023).
+      **Fluxo alternativo:** solicitacao ja processada gera aviso de que nao esta mais
+      disponivel para aprovacao; ao cancelar, o sistema retorna para a lista de solicitacoes.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Solicitacoes'
+    backofficeApp -> modAdministracao '2. solicita as pendencias'
+    modAdministracao -> bancoDados '2. consulta as solicitacoes pendentes'
+    backofficeApp -> administrador '2. apresenta as solicitacoes pendentes'
+    administrador -> backofficeApp '3. seleciona a solicitacao e os filtros desejados'
+    backofficeApp -> administrador '4. apresenta os detalhes da solicitacao'
+    administrador -> backofficeApp '5. analisa as informacoes'
+    administrador -> backofficeApp '6. seleciona a opcao Aprovar e confirma a operacao'
+    backofficeApp -> modAdministracao '7. envia a aprovacao'
+    modAdministracao -> bancoDados '7. registra a aprovacao'
+    modAdministracao -> bancoDados '8. atualiza o status da solicitacao'
+    backofficeApp -> administrador '9. informa que a solicitacao foi aprovada'
+  }
+
+  dynamic view ccd065_log_auditoria {
+    title 'CCD065 - Log de Auditoria Administrativa'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para consultar os registros de auditoria.
+      **Fluxo alternativo:** pesquisa sem resultados informa que nenhum registro foi
+      encontrado; ao alterar os filtros, o sistema realiza nova pesquisa.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Log de Auditoria'
+    backofficeApp -> modAdministracao '2. solicita os registros administrativos'
+    modAdministracao -> bancoDados '2. consulta os registros de acoes administrativas'
+    backofficeApp -> administrador '2. apresenta os registros de acoes administrativas'
+    administrador -> backofficeApp '3. aplica filtros de pesquisa, quando necessario'
+    backofficeApp -> modAdministracao '4. envia os filtros informados'
+    modAdministracao -> bancoDados '4. processa os filtros informados'
+    backofficeApp -> administrador '5. apresenta os registros correspondentes'
+    administrador -> backofficeApp '6. seleciona um registro'
+    backofficeApp -> administrador '7. apresenta os detalhes da acao registrada'
+  }
+
+  dynamic view ccd066_configuracoes_globais {
+    title 'CCD066 - Configuracoes Globais'
+    description '''
+      **Ator:** Administrador
+      **Pre-condicao:** estar autenticado e possuir permissao para alterar as configuracoes globais.
+      **Fluxo alternativo:** valor invalido e identificado e informado ao administrador,
+      seguindo nova validacao; ao cancelar, o sistema descarta as alteracoes e mantem as
+      configuracoes anteriores.
+    '''
+
+    administrador -> backofficeApp '1. acessa a opcao Configuracoes Globais'
+    backofficeApp -> modAdministracao '2. solicita as configuracoes disponiveis'
+    modAdministracao -> bancoDados '2. consulta as configuracoes disponiveis'
+    backofficeApp -> administrador '2. apresenta as configuracoes disponiveis'
+    administrador -> backofficeApp '3. seleciona uma configuracao'
+    backofficeApp -> administrador '4. apresenta os valores atuais da configuracao'
+    administrador -> backofficeApp '5. altera os valores desejados'
+    backofficeApp -> modAdministracao '6. valida as informacoes inseridas'
+    administrador -> backofficeApp '7. confirma as alteracoes'
+    modAdministracao -> bancoDados '8. salva as novas configuracoes'
+    backofficeApp -> administrador '9. confirma que as configuracoes foram atualizadas'
+  }
+
+  // ---------------------------------------------------------------
+  // 9. MARKETPLACE - COMPRADOR (CCD067 a CCD083)
+  //    O caso de uso CCD067 esta representado na view ccd033_buscar_por_vendedor
+  // ---------------------------------------------------------------
+
+  dynamic view ccd068_071_ordenar_anuncios {
+    title 'CCD068 a CCD071 - Ordenar Anuncios por Menor Preco, Maior Preco, Avaliacoes e Mais Recentes'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar visualizando a listagem de cartas ou anuncios.
+      **Observacao:** os casos de uso CCD068 (menor preco), CCD069 (maior preco),
+      CCD070 (avaliacoes) e CCD071 (mais recentes) possuem o mesmo fluxo principal,
+      alterando apenas o criterio de ordenacao.
+      **Fluxo alternativo:** sem anuncios disponiveis, exibir
+      "Nenhum anuncio disponivel para ordenacao"; sem avaliacoes suficientes, manter a
+      listagem e informar que alguns vendedores ainda nao possuem avaliacoes.
+    '''
+
+    cliente -> appWeb '1. acessa a listagem de cartas ou anuncios'
+    cliente -> appWeb '2. seleciona a opcao de ordenacao desejada (menor preco, maior preco, avaliacoes ou mais recentes)'
+    appWeb -> modPagamentos '2. envia o criterio de ordenacao'
+    modPagamentos -> bancoDados '3. organiza os anuncios conforme o criterio selecionado'
+    modPagamentos -> appWeb '4. retorna a listagem ordenada'
+    appWeb -> cliente '4. atualiza a listagem com os anuncios ordenados'
+  }
+
+  dynamic view ccd072_comprar {
+    title 'CCD072 - Comprar'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e a carta deve possuir quantidade disponivel.
+      **Fluxo alternativo:** carta indisponivel gera aviso de estoque insuficiente; pagamento
+      nao aprovado informa que nao foi possivel concluir a compra; erro na finalizacao informa
+      ao cliente que a compra nao foi concluida.
+    '''
+
+    cliente -> appWeb '1. acessa os detalhes de uma carta'
+    cliente -> appWeb '2. seleciona a opcao Comprar'
+    cliente -> appWeb '3. informa ou seleciona o endereco de entrega'
+    cliente -> appWeb '4. seleciona a forma de envio'
+    cliente -> appWeb '5. seleciona a forma de pagamento'
+    cliente -> appWeb '6. confirma a compra'
+    appWeb -> modPagamentos '6. envia os dados da compra'
+    modPagamentos -> bancoDados '7. verifica a disponibilidade da carta'
+    modPagamentos -> modPagamentos '8. calcula as informacoes necessarias para a compra'
+    modPagamentos -> gatewayPagamento '9. processa o pedido'
+    modPagamentos -> bancoDados '10. registra a compra'
+    modPagamentos -> bancoDados '11. atualiza a quantidade disponivel'
+    modPagamentos -> transportadora '11. solicita a entrega da carta comprada'
+    modPagamentos -> modNotificacoes '12. notifica o vendedor sobre o novo pedido'
+    modPagamentos -> appWeb '13. confirma a compra'
+    appWeb -> cliente '13. confirma a compra ao cliente'
+  }
+
+  dynamic view ccd073_entrar_em_contato {
+    title 'CCD073 - Entrar em Contato'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e visualizando um anuncio ativo.
+      **Fluxo alternativo:** vendedor indisponivel para contato gera aviso de que nao foi
+      possivel iniciar a conversa; bloqueio entre as partes impede o envio da mensagem.
+    '''
+
+    cliente -> appWeb '1. acessa os detalhes do anuncio'
+    cliente -> appWeb '2. seleciona a opcao Entrar em contato'
+    cliente -> appWeb '3. digita e envia uma mensagem ao vendedor'
+    appWeb -> modChatPessoal '3. envia a mensagem'
+    modChatPessoal -> bancoDados '4. identifica o vendedor responsavel pelo anuncio'
+    modChatPessoal -> bancoDados '5. cria ou abre a conversa entre o cliente e o vendedor'
+    modChatPessoal -> msgTempoReal '6. envia a mensagem'
+    msgTempoReal -> modNotificacoes '7. notifica o vendedor sobre a nova mensagem'
+  }
+
+  dynamic view ccd074_visualizar_fotos {
+    title 'CCD074 - Visualizar Fotos'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar visualizando os detalhes de um anuncio.
+      **Fluxo alternativo:** caso o anuncio nao possua fotos adicionais, o sistema exibe
+      apenas as imagens disponiveis.
+    '''
+
+    cliente -> appWeb '1. acessa os detalhes do anuncio'
+    cliente -> appWeb '2. seleciona uma foto da carta'
+    appWeb -> modPagamentos '4. solicita as imagens do anuncio'
+    modPagamentos -> bancoDados '4. busca as imagens cadastradas no anuncio'
+    modPagamentos -> appWeb '5. retorna as fotos da carta'
+    appWeb -> cliente '5. exibe as fotos da carta'
+    cliente -> appWeb '3. navega entre as fotos disponiveis'
+    appWeb -> cliente '6. permite a visualizacao das demais imagens disponiveis'
+  }
+
+  dynamic view ccd075_historico_precos {
+    title 'CCD075 - Visualizar Historico de Precos'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar visualizando os detalhes de uma carta.
+      **Fluxo alternativo:** sem dados historicos suficientes, informar
+      "Nao ha historico de precos disponivel para esta carta".
+    '''
+
+    cliente -> appWeb '1. acessa os detalhes da carta'
+    cliente -> appWeb '2. seleciona a opcao Historico de precos'
+    appWeb -> modPagamentos '3. solicita o historico de precos'
+    modPagamentos -> bancoDados '3. busca os registros historicos de precos da carta'
+    modPagamentos -> modPagamentos '4. organiza os dados por periodo'
+    modPagamentos -> appWeb '5. retorna o historico de precos'
+    appWeb -> cliente '5. exibe o historico de precos ao cliente'
+  }
+
+  dynamic view ccd076_anuncios_ativos {
+    title 'CCD076 - Visualizar Anuncios Ativos'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e possuir acesso ao painel da plataforma.
+      **Fluxo alternativo:** sem anuncios ativos, exibir
+      "Nao existem anuncios ativos no momento".
+    '''
+
+    cliente -> appWeb '1. acessa o Dashboard'
+    cliente -> appWeb '2. seleciona a secao Anuncios Ativos'
+    appWeb -> modPagamentos '3. solicita os anuncios ativos'
+    modPagamentos -> bancoDados '3. busca os anuncios ativos relacionados ao cliente'
+    modPagamentos -> appWeb '4. retorna a listagem encontrada'
+    appWeb -> cliente '4. exibe a listagem dos anuncios encontrados'
+  }
+
+  dynamic view ccd077_visualizar_pedidos {
+    title 'CCD077 - Visualizar Pedidos'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado.
+      **Fluxo alternativo:** sem pedidos, exibir "Voce ainda nao possui pedidos".
+    '''
+
+    cliente -> appWeb '1. acessa o Dashboard ou a secao Meus Pedidos'
+    appWeb -> modPagamentos '2. solicita os pedidos do cliente'
+    modPagamentos -> bancoDados '2. busca os pedidos relacionados ao cliente'
+    modPagamentos -> appWeb '3. retorna a lista de pedidos'
+    appWeb -> cliente '3. exibe a lista de pedidos e suas informacoes'
+  }
+
+  dynamic view ccd078_mostrar_todas_cartas {
+    title 'CCD078 - Mostrar Todas as Cartas'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** acessar a secao de marketplace ou catalogo.
+      **Fluxo alternativo:** sem cartas cadastradas, informar que nao existem cartas disponiveis.
+    '''
+
+    cliente -> appWeb '1. acessa a secao de cartas'
+    appWeb -> modPagamentos '2. solicita as cartas disponiveis'
+    modPagamentos -> bancoDados '2. busca as cartas cadastradas e disponiveis na plataforma'
+    modPagamentos -> appWeb '3. retorna a listagem de cartas'
+    appWeb -> cliente '3. exibe a listagem de cartas'
+    appWeb -> cliente '4. disponibiliza opcoes de busca, filtros e ordenacao'
+  }
+
+  dynamic view ccd079_quantidade_disponivel {
+    title 'CCD079 - Visualizar Quantidade Disponivel'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar visualizando os detalhes de um anuncio.
+      **Fluxo alternativo:** caso a quantidade seja igual a zero, informar que a carta esta indisponivel.
+    '''
+
+    cliente -> appWeb '1. acessa os detalhes do anuncio'
+    appWeb -> modPagamentos '2. solicita a quantidade disponivel'
+    modPagamentos -> bancoDados '2. busca a quantidade disponivel da carta no anuncio'
+    modPagamentos -> appWeb '3. retorna a quantidade disponivel'
+    appWeb -> cliente '3. exibe a quantidade disponivel ao cliente'
+  }
+
+  dynamic view ccd080_dados_vendedor {
+    title 'CCD080 - Visualizar Dados do Vendedor'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar visualizando um anuncio ou o perfil de um vendedor.
+      **Fluxo alternativo:** caso algumas informacoes nao estejam disponiveis, exibir apenas
+      os dados publicos cadastrados pelo vendedor.
+    '''
+
+    cliente -> appWeb '1. acessa os detalhes de um anuncio'
+    cliente -> appWeb '2. seleciona o perfil ou as informacoes do vendedor'
+    appWeb -> modPerfil '3. solicita os dados publicos do vendedor'
+    modPerfil -> bancoDados '3. busca os dados publicos do vendedor'
+    modPerfil -> appWeb '4. retorna as informacoes disponiveis'
+    appWeb -> cliente '4. exibe as informacoes disponiveis do vendedor'
+  }
+
+  dynamic view ccd081_visualizar_avaliacoes {
+    title 'CCD081 - Visualizar Avaliacoes'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e visualizando a pagina de um anuncio ou o perfil do vendedor.
+      **Fluxo alternativo:** sem vendas avaliadas, exibir
+      "Este vendedor ainda nao possui avaliacoes".
+    '''
+
+    cliente -> appWeb '1. clica na secao de Avaliacoes do vendedor'
+    appWeb -> modPerfil '2. solicita o historico de avaliacoes'
+    modPerfil -> bancoDados '2. busca o historico de avaliacoes e a nota media'
+    modPerfil -> appWeb '3. retorna a nota consolidada e os comentarios'
+    appWeb -> cliente '3. exibe a nota consolidada e a lista de comentarios dos compradores'
+  }
+
+  dynamic view ccd082_denunciar_anuncio {
+    title 'CCD082 - Denunciar Anuncio'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e na pagina de detalhes do anuncio.
+      **Fluxo alternativo:** ao enviar a denuncia sem selecionar um motivo, o sistema bloqueia
+      o envio e destaca o campo obrigatorio com uma mensagem de erro.
+    '''
+
+    cliente -> appWeb '1. seleciona a opcao Denunciar Anuncio'
+    appWeb -> cliente '2. apresenta formulario solicitando o motivo da denuncia'
+    cliente -> appWeb '3. seleciona o motivo (ex: fraude, item falso), adiciona observacao e confirma'
+    appWeb -> modPagamentos '3. envia a denuncia'
+    modPagamentos -> bancoDados '4. registra a denuncia'
+    modPagamentos -> appWeb '4. confirma o envio'
+    appWeb -> cliente '4. emite mensagem de confirmacao do envio'
+  }
+
+  dynamic view ccd083_denunciar_vendedor {
+    title 'CCD083 - Denunciar Vendedor'
+    description '''
+      **Ator:** Cliente
+      **Pre-condicao:** estar autenticado e acessando o perfil publico do vendedor.
+      **Fluxo alternativo:** ao cancelar a denuncia fechando a janela, o sistema aborta o
+      processo e nao envia nenhum dado.
+    '''
+
+    cliente -> appWeb '1. acessa o perfil do vendedor e clica em Denunciar Vendedor'
+    appWeb -> cliente '2. solicita a escolha de um motivo para a infracao'
+    cliente -> appWeb '3. escolhe o motivo, descreve a situacao e envia'
+    appWeb -> modPerfil '3. envia a ocorrencia'
+    modPerfil -> bancoDados '4. registra a ocorrencia no painel de moderacao'
+    modPerfil -> appWeb '4. confirma o registro'
+    appWeb -> cliente '4. avisa o cliente do sucesso'
+  }
+
+  // ---------------------------------------------------------------
+  // 10. MARKETPLACE - VENDEDOR (CCD084 a CCD093)
+  // ---------------------------------------------------------------
+
+  dynamic view ccd084_criar_anuncio {
+    title 'CCD084 - Criar Anuncio'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** estar autenticado com perfil de Vendedor e possuir a carta em seu
+      inventario virtual.
+      **Fluxo alternativo:** valor de venda zerado ou negativo faz o sistema exibir o alerta
+      de validacao "Por favor, insira um valor valido maior que zero".
+    '''
+
+    vendedor -> appWeb '1. seleciona a carta que deseja vender e clica em Criar Anuncio'
+    appWeb -> vendedor '2. exibe o formulario solicitando preco, estado de conservacao e fotos'
+    vendedor -> appWeb '3. preenche os dados e clica em Publicar'
+    appWeb -> modPagamentos '3. envia os dados do anuncio'
+    modPagamentos -> modPagamentos '4. valida as informacoes inseridas'
+    modPagamentos -> bancoDados '5. cria o anuncio e o torna visivel no marketplace'
+    modPagamentos -> appWeb '5. confirma a publicacao'
+    appWeb -> vendedor '5. exibe o anuncio publicado'
+  }
+
+  dynamic view ccd085_editar_anuncio {
+    title 'CCD085 - Editar Anuncio'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** possuir ao menos um anuncio ativo ou pausado na plataforma.
+      **Fluxo alternativo:** ao salvar com campo obrigatorio em branco, o sistema impede a
+      acao e solicita o preenchimento do campo.
+    '''
+
+    vendedor -> appWeb '1. acessa a lista dos seus anuncios e seleciona Editar em um deles'
+    appWeb -> modPagamentos '2. solicita os dados atuais do anuncio'
+    modPagamentos -> bancoDados '2. consulta os dados atuais do anuncio'
+    appWeb -> vendedor '2. carrega o formulario com os dados atuais do anuncio'
+    vendedor -> appWeb '3. modifica as informacoes (ex: preco, descricao) e salva'
+    appWeb -> modPagamentos '3. envia as alteracoes'
+    modPagamentos -> bancoDados '4. atualiza o registro do anuncio'
+    appWeb -> vendedor '4. confirma a edicao'
+  }
+
+  dynamic view ccd086_excluir_anuncio {
+    title 'CCD086 - Excluir Anuncio'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** ter um anuncio criado (ativo ou pausado).
+      **Fluxo alternativo:** ao selecionar "Cancelar" na caixa de dialogo, o sistema fecha o
+      aviso e mantem o anuncio inalterado.
+    '''
+
+    vendedor -> appWeb '1. seleciona a opcao Excluir no anuncio correspondente'
+    appWeb -> vendedor '2. exibe caixa de dialogo pedindo a confirmacao da exclusao definitiva'
+    vendedor -> appWeb '3. confirma a exclusao'
+    appWeb -> modPagamentos '3. envia a confirmacao'
+    modPagamentos -> bancoDados '4. remove o anuncio do marketplace e do painel do vendedor'
+    appWeb -> vendedor '4. atualiza o painel do vendedor'
+  }
+
+  dynamic view ccd087_pausar_anuncio {
+    title 'CCD087 - Pausar Anuncio'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** ter um anuncio com o status Ativo.
+      **Fluxo alternativo:** caso o anuncio ja possua negociacao em andamento (carrinho ou
+      pagamento pendente), o sistema alerta que o anuncio nao pode ser pausado no momento.
+    '''
+
+    vendedor -> appWeb '1. aciona o botao Pausar no painel de gestao de anuncios'
+    appWeb -> modPagamentos '1. envia a solicitacao de pausa'
+    modPagamentos -> bancoDados '2. atualiza o status do anuncio para Pausado'
+    modPagamentos -> appWeb '3. confirma a alteracao de status'
+    appWeb -> vendedor '3. oculta imediatamente o anuncio das buscas e listagens publicas'
+  }
+
+  dynamic view ccd088_reativar_anuncio {
+    title 'CCD088 - Reativar Anuncio'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** ter um anuncio com o status Pausado.
+      **Fluxo alternativo:** havendo restricao na conta do vendedor (ex: bloqueio temporario),
+      o sistema impede a reativacao e exibe notificacao de erro.
+    '''
+
+    vendedor -> appWeb '1. acessa seus anuncios inativos e clica em Reativar'
+    appWeb -> modPagamentos '1. envia a solicitacao de reativacao'
+    modPagamentos -> bancoDados '2. atualiza o status de Pausado para Ativo'
+    modPagamentos -> appWeb '3. confirma a reativacao'
+    appWeb -> vendedor '3. recoloca o anuncio nas listas de busca do marketplace'
+  }
+
+  dynamic view ccd089_visualizar_propostas {
+    title 'CCD089 - Visualizar Propostas'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** ter recebido ao menos uma proposta/oferta em seus anuncios.
+      **Fluxo alternativo:** lista vazia exibe "Voce nao tem novas propostas no momento".
+    '''
+
+    vendedor -> appWeb '1. clica no menu de Propostas Recebidas ou notificacoes'
+    appWeb -> modPagamentos '2. solicita as propostas ativas'
+    modPagamentos -> bancoDados '2. compila as propostas ativas com valor, data e usuario'
+    modPagamentos -> appWeb '2. retorna a lista de propostas'
+    appWeb -> vendedor '2. exibe a lista de propostas ativas'
+    vendedor -> appWeb '3. clica sobre uma proposta especifica para ver detalhes'
+    appWeb -> vendedor '4. abre a interface de negociacao permitindo aceitar ou recusar'
+  }
+
+  dynamic view ccd090_denunciar_usuario {
+    title 'CCD090 - Denunciar Usuario'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** acessar o perfil ou o chat do usuario comprador.
+      **Fluxo alternativo:** ao enviar sem detalhar o comportamento no campo de observacao
+      obrigatorio, o sistema alerta exigindo uma breve explicacao do ocorrido.
+    '''
+
+    vendedor -> appWeb '1. acessa a conversa ou o perfil do comprador e seleciona Denunciar'
+    appWeb -> vendedor '2. solicita a categoria da denuncia (ex: spam, linguagem ofensiva)'
+    vendedor -> appWeb '3. preenche os dados necessarios e envia'
+    appWeb -> modPerfil '3. envia a denuncia'
+    modPerfil -> bancoDados '4. processa e registra o envio'
+    appWeb -> vendedor '4. informa que a moderacao ira analisar o caso'
+  }
+
+  dynamic view ccd091_editar_perfil_vendedor {
+    title 'CCD091 - Editar Perfil (Vendedor)'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** estar autenticado e na tela Meu Perfil.
+      **Fluxo alternativo:** e-mail ou documento pertencente a outra conta gera o erro
+      "Esta informacao ja esta em uso por outro usuario".
+    '''
+
+    vendedor -> appWeb '1. clica na opcao de Editar Perfil'
+    appWeb -> modPerfil '2. solicita os dados do vendedor'
+    modPerfil -> bancoDados '2. consulta dados pessoais, foto e meios de recebimento'
+    appWeb -> vendedor '2. habilita os campos de dados pessoais, foto e meios de recebimento'
+    vendedor -> appWeb '3. altera as informacoes necessarias e clica em Salvar'
+    appWeb -> modPerfil '3. envia as alteracoes'
+    modPerfil -> bancoDados '4. valida os dados e atualiza o cadastro'
+    appWeb -> vendedor '4. confirma a atualizacao'
+  }
+
+  dynamic view ccd092_total_vendas {
+    title 'CCD092 - Visualizar Total de Vendas'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** acessar o painel de metricas/dashboard da sua conta.
+      **Fluxo alternativo:** vendedor iniciante sem vendas visualiza as metricas zeradas com
+      incentivos para realizar a primeira venda.
+    '''
+
+    vendedor -> appWeb '1. acessa a aba de Estatisticas ou Dashboard'
+    appWeb -> modPagamentos '2. solicita o total de vendas'
+    modPagamentos -> bancoDados '2. calcula a soma de todas as transacoes concluidas com sucesso'
+    modPagamentos -> appWeb '3. retorna o total financeiro e o volume de vendas'
+    appWeb -> vendedor '3. renderiza graficos e cards numericos com o total financeiro e volume de vendas'
+  }
+
+  dynamic view ccd093_cartas_mais_vendidas {
+    title 'CCD093 - Visualizar Cartas Mais Vendidas'
+    description '''
+      **Ator:** Vendedor
+      **Pre-condicao:** acessar o painel de metricas/dashboard da sua conta.
+      **Fluxo alternativo:** sem dados suficientes no periodo, indicar
+      "Nao ha dados suficientes para formar o ranking no periodo escolhido".
+    '''
+
+    vendedor -> appWeb '1. acessa o relatorio de Cartas Mais Vendidas'
+    appWeb -> modPagamentos '2. solicita o ranking de vendas'
+    modPagamentos -> bancoDados '2. filtra e ordena o historico de vendas agrupando pelas cartas de maior saida'
+    modPagamentos -> appWeb '3. retorna o ranking'
+    appWeb -> vendedor '3. exibe o ranking em formato de lista informando o volume de cada carta'
+  }
+}

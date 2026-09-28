@@ -1,0 +1,221 @@
+@startuml CromoCard_Diagrama_Casos_de_Uso
+
+' ============================================================
+' CROMOCARD - Diagrama de Casos de Uso (CCD001 a CCD046)
+' ============================================================
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  ArrowColor #A80036
+}
+skinparam package {
+  BackgroundColor #F0F0F0
+  BorderColor #333333
+}
+skinparam defaultFontSize 11
+
+' ========================
+' ATORES
+' ========================
+actor "Visitante" as Visitante
+actor "Cliente" as Cliente
+actor "Administrador\ndo Grupo" as AdminGrupo
+actor "Usuário" as Usuario
+
+' Herança entre atores
+Cliente --|> Visitante
+AdminGrupo --|> Cliente
+
+' ============================================================
+' 1. PAINEL PÚBLICO (Home, Login, Cadastro)
+' ============================================================
+package "1. Painel Público (Home, Login, Cadastro)" {
+  usecase "Visualizar Destaques\n(CCD001)" as UC001
+  usecase "Buscar Global\n(CCD002)" as UC002
+  usecase "Criar Conta\n(CCD003)" as UC003
+  usecase "Realizar Login\n(CCD004)" as UC004
+  usecase "Acessar Central de\nAjuda / FAQ\n(CCD005)" as UC005
+  usecase "Recuperar Senha\n(CCD006)" as UC006
+}
+
+Visitante --> UC001
+Visitante --> UC002
+Visitante --> UC003
+Visitante --> UC004
+Visitante --> UC005
+Visitante --> UC006
+
+' Relacionamentos
+UC004 ..> UC006 : <<extend>>\nEsqueceu a senha
+UC003 ..> UC004 : <<include>>\nApós cadastro, redireciona ao login
+
+' ============================================================
+' 2. PAINEL CLIENTE - Dashboard e Álbuns
+' ============================================================
+package "2. Painel Cliente - Dashboard e Álbuns" {
+  usecase "Visualizar Resumo\nda Coleção\n(CCD007)" as UC007
+  usecase "Listar Álbuns\n(CCD008)" as UC008
+  usecase "Buscar Álbum\n(CCD009)" as UC009
+  usecase "Solicitar Álbum\n(CCD010)" as UC010
+  usecase "Remover Álbum\n(CCD011)" as UC011
+  usecase "Compartilhar Coleção\n(CCD012)" as UC012
+}
+
+Cliente --> UC007
+Cliente --> UC008
+Cliente --> UC009
+Cliente --> UC010
+Cliente --> UC011
+Cliente --> UC012
+
+UC009 ..> UC008 : <<extend>>\nFiltra a listagem
+
+' ============================================================
+' 2. PAINEL CLIENTE - Gestão de Cartas
+' ============================================================
+package "2. Painel Cliente - Gestão de Cartas" {
+  usecase "Visualizar Cartas\n(CCD013)" as UC013
+  usecase "Marcar Carta\ncomo Possuo\n(CCD014)" as UC014
+  usecase "Marcar Carta\ncomo Faltante\n(CCD015)" as UC015
+  usecase "Marcar Carta\nRepetida\n(CCD016)" as UC016
+  usecase "Adicionar\nQuantidade\n(CCD017)" as UC017
+  usecase "Remover Carta\n(CCD018)" as UC018
+  usecase "Visualizar\nProgresso\n(CCD019)" as UC019
+  usecase "Compartilhar\nProgresso\n(CCD020)" as UC020
+}
+
+Cliente --> UC013
+Cliente --> UC014
+Cliente --> UC015
+Cliente --> UC016
+Cliente --> UC017
+Cliente --> UC018
+Cliente --> UC019
+Cliente --> UC020
+
+UC014 ..> UC019 : <<include>>\nRecalcula progresso
+UC015 ..> UC019 : <<include>>\nRecalcula progresso
+UC018 ..> UC019 : <<include>>\nRecalcula progresso
+UC020 ..> UC019 : <<include>>\nRequer progresso
+UC016 ..> UC014 : <<extend>>\nConverte para Possuo\nse status = Faltante
+
+' ============================================================
+' 2. PAINEL CLIENTE - Pesquisa e Busca de Cartas
+' ============================================================
+package "2. Painel Cliente - Pesquisa e Busca" {
+  usecase "Pesquisar Carta\n(CCD021)" as UC021
+  usecase "Adicionar Carta\n(CCD022)" as UC022
+  usecase "Solicitar Cadastro\nda Carta\n(CCD023)" as UC023
+  usecase "Buscar por Nome\n(CCD024)" as UC024
+  usecase "Buscar por Número\n(CCD025)" as UC025
+  usecase "Buscar por Coleção\n(CCD026)" as UC026
+  usecase "Buscar por\nCategoria\n(CCD027)" as UC027
+  usecase "Buscar por\nRaridade\n(CCD028)" as UC028
+  usecase "Buscar por Idioma\n(CCD029)" as UC029
+  usecase "Visualizar Detalhes\n(CCD030)" as UC030
+  usecase "Visualizar Info.\nda Carta\n(CCD031)" as UC031
+  usecase "Buscar por Estado\nda Carta **\n(CCD032)" as UC032
+  usecase "Buscar por\nVendedor ***\n(CCD033)" as UC033
+}
+
+Cliente --> UC021
+Cliente --> UC022
+Cliente --> UC023
+Cliente --> UC030
+
+' Buscas especializadas estendem a pesquisa geral
+UC024 ..> UC021 : <<extend>>
+UC025 ..> UC021 : <<extend>>
+UC026 ..> UC021 : <<extend>>
+UC027 ..> UC021 : <<extend>>
+UC028 ..> UC021 : <<extend>>
+UC029 ..> UC021 : <<extend>>
+UC032 ..> UC021 : <<extend>>
+UC033 ..> UC021 : <<extend>>
+
+' Relacionamentos de include
+UC030 ..> UC031 : <<include>>\nExibe informações
+UC021 ..> UC030 : <<extend>>\nAo selecionar resultado
+UC023 ..> UC021 : <<extend>>\nCarta não encontrada
+
+' ============================================================
+' 3. MINHA COLEÇÃO (Álbuns e Cartas)
+' ============================================================
+package "3. Minha Coleção (Álbuns e Cartas)" {
+  usecase "Buscar Categoria\ndo Álbum\n(CCD034)" as UC034
+  usecase "Resetar Progresso\ndo Álbum\n(CCD035)" as UC035
+  usecase "Adicionar Carta\nao Portfólio\n(CCD036)" as UC036
+  usecase "Buscar Categoria\ndo Card\n(CCD037)" as UC037
+  usecase "Acessibilidade\n(CCD038)" as UC038
+}
+
+Cliente --> UC034
+Cliente --> UC035
+Cliente --> UC036
+Cliente --> UC037
+Cliente --> UC038
+
+UC036 ..> UC023 : <<extend>>\nCarta não encontrada\nna base
+
+' ============================================================
+' 4. GRUPOS DA COMUNIDADE
+' ============================================================
+package "4. Grupos da Comunidade" {
+  usecase "Explorar e Entrar\nem Grupos\n(CCD039)" as UC039
+  usecase "Denunciar Mensagem\nno Grupo\n(CCD040)" as UC040
+  usecase "Silenciar\nNotificações\nde Grupo\n(CCD041)" as UC041
+  usecase "Pesquisar no\nHistórico do Grupo\n(CCD042)" as UC042
+  usecase "Criar e Administrar\nGrupo\n(CCD043)" as UC043
+  usecase "Interagir no Chat\ndo Grupo\n(CCD044)" as UC044
+}
+
+Cliente --> UC039
+Cliente --> UC040
+Cliente --> UC041
+Cliente --> UC042
+Cliente --> UC044
+AdminGrupo --> UC043
+
+UC043 ..> UC039 : <<extend>>\nCriar novo grupo\nse busca não retorna
+
+' ============================================================
+' 5. CHAT PESSOAL (Conversas)
+' ============================================================
+package "5. Chat Pessoal (Conversas)" {
+  usecase "Responder Mensagem\nEspecífica\n(CCD045)" as UC045
+  usecase "Visualizar\nMensagens\n(CCD046)" as UC046
+}
+
+Usuario --> UC045
+Usuario --> UC046
+
+UC045 ..> UC046 : <<include>>\nRequer visualização\nda conversa
+
+' ============================================================
+' NOTAS
+' ============================================================
+note bottom of UC032
+  ** Funcionalidade futura
+end note
+
+note bottom of UC033
+  *** Funcionalidade futura
+  (Marketplace)
+end note
+
+note as N1
+  <b>Legenda:</b>
+  **  = Funcionalidade futura
+  *** = Funcionalidade futura (Marketplace)
+  
+  <<include>> = O caso de uso base
+  sempre invoca o incluído
+  
+  <<extend>> = O caso de uso estendido
+  é invocado condicionalmente
+end note
+
+@enduml
