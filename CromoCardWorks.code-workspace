@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "apps/CromoCard-Frontend"
+		},
+		{
+			"path": "apps/Backend-CromoCard"
+		}
+	],
+	"settings": {}
+}
