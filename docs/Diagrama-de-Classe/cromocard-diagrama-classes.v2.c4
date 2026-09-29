@@ -1,0 +1,1179 @@
+// =====================================================================
+//  Fonte da verdade do MODELO DE DADOS: docs/Diagramas/DER/dbdiagram.io/03-der-completo.dbml
+//  Este diagrama e derivado do DER + dos Casos de Uso (docs/Casos-De-Uso/) e
+//  acrescenta o que o DER (fisico/relacional) nao mostra: heranca de tipos de
+//  usuario e comportamento (metodos) de cada classe. Ver ADR-0015, ADR-0016 e
+//  ADR-0017 em docs/ADR/ para o racional de cada decisao de modelagem.
+//
+//  43 classes + 22 enumeracoes, organizados nos mesmos 8 modulos do DER.
+//  Relacoes usam rotulo textual com multiplicidade (o LikeC4 nao tem notacao
+//  UML nativa de heranca/composicao/agregacao) - ver legenda no README.md
+//  desta pasta e o ADR-0017.
+// =====================================================================
+
+specification {
+  element class {
+    style {
+      shape rectangle
+    }
+  }
+  element enumeracao {
+    style {
+      shape rectangle
+      color secondary
+    }
+  }
+}
+
+model {
+
+  // =====================================================================
+  // MODULO 1 - USUARIOS, PERFIL E ACESSO
+  // =====================================================================
+
+  usuario = class "Usuário" {
+    metadata {
+      observacoes """
+        Classe base/abstrata: toda conta e um Usuario; o papel (Cliente,
+        Vendedor, Administrador) e definido no cadastro e nao muda depois
+        (ver ADR-0015 - Single Table Inheritance / enum tipo_usuario no DER).
+        Relacoes de outras classes para "usuario" (nao para uma subclasse)
+        valem para qualquer um dos tres papeis.
+      """
+      atributos """
+        - id: Long
+        - nome: String
+        - email: String
+        - senhaHash: String
+        - tipo: TipoUsuario
+        - status: StatusUsuario
+        - emailConfirmado: Boolean
+        - aceiteTermos: Boolean
+        - dataCadastro: DateTime
+        - dataExclusao: DateTime
+      """
+      metodos """
+        + autenticar()
+        + editarPerfil()
+        + alterarSenha()
+        + solicitarRecuperacaoSenha()
+        + confirmarEmail()
+        + excluirConta()
+      """
+    }
+  }
+
+  cliente = class "Cliente" {
+    metadata {
+      observacoes """Especializa Usuário (tipo = CLIENTE). Sem colunas próprias no DER."""
+      metodos """
+        + gerenciarColecao()
+        + participarDeGrupo()
+        + comprarCarta()
+        + favoritarItem()
+        + avaliarVendedor()
+      """
+    }
+  }
+
+  vendedor = class "Vendedor" {
+    metadata {
+      observacoes """
+        Especializa Usuário (tipo = VENDEDOR). Sem colunas próprias no DER;
+        reputação NÃO é atributo armazenado — é calculada a partir de Avaliacao
+        (correção em relação à versão anterior do diagrama, que tinha
+        `reputacao: Decimal` sem lastro no DER).
+      """
+      metodos """
+        + criarAnuncio()
+        + editarAnuncio()
+        + pausarAnuncio()
+        + reativarAnuncio()
+        + responderProposta()
+        + visualizarVendas()
+        + calcularReputacaoMedia(): Decimal
+      """
+    }
+  }
+
+  administrador = class "Administrador" {
+    metadata {
+      observacoes """Especializa Usuário (tipo = ADMINISTRADOR). Sem colunas próprias no DER."""
+      metodos """
+        + aprovarSolicitacaoCadastro()
+        + aprovarSolicitacaoGrupo()
+        + gerenciarUsuario()
+        + gerenciarCatalogo()
+        + dispararNotificacaoGlobal()
+        + configurarPlataforma()
+        + analisarDenuncia()
+      """
+    }
+  }
+
+  perfil = class "Perfil" {
+    metadata {
+      atributos """
+        - id: Long
+        - bio: String
+        - avatarUrl: String
+        - cidade: String
+        - privacidadePortfolio: Privacidade
+      """
+      metodos """
+        + editarBio()
+        + atualizarAvatar()
+        + definirPrivacidade()
+      """
+    }
+  }
+
+  endereco = class "Endereço" {
+    metadata {
+      atributos """
+        - id: Long
+        - rotulo: String
+        - cep: String
+        - logradouro: String
+        - numero: String
+        - complemento: String
+        - bairro: String
+        - cidade: String
+        - estado: String
+        - principal: Boolean
+      """
+      metodos """
+        + cadastrar()
+        + editar()
+        + definirComoPrincipal()
+      """
+    }
+  }
+
+  tokenRecuperacaoSenha = class "TokenRecuperacaoSenha" {
+    metadata {
+      atributos """
+        - id: Long
+        - token: String
+        - expiraEm: DateTime
+        - usado: Boolean
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + gerar()
+        + validar()
+        + marcarComoUsado()
+      """
+    }
+  }
+
+  conquista = class "Conquista" {
+    metadata {
+      atributos """
+        - id: Long
+        - nome: String
+        - descricao: String
+        - iconeUrl: String
+        - criterio: String
+      """
+      metodos """
+        + verificarCriterio()
+      """
+    }
+  }
+
+  usuarioConquista = class "UsuarioConquista" {
+    metadata {
+      observacoes """Classe associativa N:N (Usuario x Conquista), PK composta no DER."""
+      atributos """
+        - dataObtencao: DateTime
+      """
+      metodos """
+        + registrarObtencao()
+      """
+    }
+  }
+
+  assinatura = class "Assinatura" {
+    metadata {
+      observacoes """Plano PRO - funcionalidade futura (tag `futuro` nas user stories)."""
+      atributos """
+        - id: Long
+        - plano: String
+        - status: StatusPlano
+        - metodoPagamento: MetodoPagamento
+        - dataInicio: Date
+        - dataFim: Date
+        - gatewayReferencia: String
+      """
+      metodos """
+        + ativar()
+        + cancelar()
+        + renovar()
+        + verificarExpiracao()
+      """
+    }
+  }
+
+  tipoUsuario = enumeracao "TipoUsuario" {
+    metadata {
+      valores """CLIENTE, VENDEDOR, ADMINISTRADOR"""
+    }
+  }
+
+  statusUsuario = enumeracao "StatusUsuario" {
+    metadata {
+      valores """ATIVO, SUSPENSO, EXCLUIDO"""
+    }
+  }
+
+  privacidade = enumeracao "Privacidade" {
+    metadata {
+      valores """PUBLICO, PRIVADO"""
+    }
+  }
+
+  statusPlano = enumeracao "StatusPlano" {
+    metadata {
+      valores """ATIVA, CANCELADA, EXPIRADA"""
+    }
+  }
+
+  metodoPagamento = enumeracao "MetodoPagamento" {
+    metadata {
+      valores """CARTAO_CREDITO, PIX, BOLETO"""
+    }
+  }
+
+  // =====================================================================
+  // MODULO 2 - CATALOGO GLOBAL (ALBUNS E CARTAS)
+  // =====================================================================
+
+  categoria = class "Categoria" {
+    metadata {
+      observacoes """Hierárquica (categoria pai opcional) - ex.: seleção / time."""
+      atributos """
+        - id: Long
+        - nome: String
+        - tipo: TipoCategoria
+        - descricao: String
+        - padrao: Boolean
+      """
+      metodos """
+        + criar()
+        + editar()
+        + inativar()
+      """
+    }
+  }
+
+  raridade = class "Raridade" {
+    metadata {
+      atributos """
+        - id: Long
+        - nome: String
+        - ordem: Integer
+      """
+      metodos """
+        + criar()
+        + editar()
+        + reordenar()
+      """
+    }
+  }
+
+  idioma = class "Idioma" {
+    metadata {
+      atributos """
+        - id: Long
+        - nome: String
+        - codigo: String
+      """
+      metodos """
+        + criar()
+        + editar()
+      """
+    }
+  }
+
+  estadoConservacao = class "EstadoConservacao" {
+    metadata {
+      observacoes """Ex.: Mint, Near Mint, Ótimo, Bom, Regular."""
+      atributos """
+        - id: Long
+        - nome: String
+        - ordem: Integer
+      """
+      metodos """
+        + criar()
+        + editar()
+        + reordenar()
+      """
+    }
+  }
+
+  album = class "Álbum" {
+    metadata {
+      atributos """
+        - id: Long
+        - titulo: String
+        - editora: String
+        - ano: Integer
+        - descricao: String
+        - capaUrl: String
+        - totalCartas: Integer
+        - status: StatusAlbum
+        - dataCadastro: DateTime
+      """
+      metodos """
+        + cadastrar()
+        + editar()
+        + inativar()
+        + calcularTotalCartas()
+      """
+    }
+  }
+
+  carta = class "Carta" {
+    metadata {
+      observacoes """album nulo = carta avulsa (item de portfólio)."""
+      atributos """
+        - id: Long
+        - nome: String
+        - numero: String
+        - descricao: String
+        - imagemFrenteUrl: String
+        - imagemVersoUrl: String
+        - dataCadastro: DateTime
+      """
+      metodos """
+        + cadastrar()
+        + editar()
+        + pesquisar()
+        + visualizarDetalhes()
+        + consultarHistoricoPreco()
+      """
+    }
+  }
+
+  fotoCarta = class "FotoCarta" {
+    metadata {
+      atributos """
+        - id: Long
+        - url: String
+        - ordem: Integer
+      """
+      metodos """
+        + adicionar()
+        + remover()
+        + reordenar()
+      """
+    }
+  }
+
+  historicoPreco = class "HistoricoPreco" {
+    metadata {
+      atributos """
+        - id: Long
+        - preco: Decimal
+        - dataReferencia: Date
+        - origem: OrigemPreco
+      """
+      metodos """
+        + registrarPreco()
+        + consultarHistorico()
+      """
+    }
+  }
+
+  tipoCategoria = enumeracao "TipoCategoria" {
+    metadata {
+      valores """ALBUM, CARTA"""
+    }
+  }
+
+  statusAlbum = enumeracao "StatusAlbum" {
+    metadata {
+      valores """ATIVO, INATIVO"""
+    }
+  }
+
+  origemPreco = enumeracao "OrigemPreco" {
+    metadata {
+      valores """VENDA, ANUNCIO"""
+    }
+  }
+
+  // =====================================================================
+  // MODULO 3 - COLECAO DO CLIENTE
+  // =====================================================================
+
+  colecao = class "Colecao" {
+    metadata {
+      observacoes """1:1 com Usuário (colecao.usuario_id é unique no DER)."""
+      atributos """
+        - id: Long
+        - publica: Boolean
+        - linkCompartilhamento: String
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + compartilhar()
+        + tornarPublica()
+        + visualizarResumo()
+      """
+    }
+  }
+
+  albumUsuario = class "AlbumUsuario" {
+    metadata {
+      atributos """
+        - id: Long
+        - favorito: Boolean
+        - progressoPercentual: Decimal
+        - dataInicio: DateTime
+      """
+      metodos """
+        + calcularProgresso()
+        + favoritar()
+        + resetarProgresso()
+      """
+    }
+  }
+
+  colecaoCarta = class "ColecaoCarta" {
+    metadata {
+      atributos """
+        - id: Long
+        - status: StatusCartaColecao
+        - quantidade: Integer
+        - valorMercado: Decimal
+        - dataAdicao: DateTime
+      """
+      metodos """
+        + marcarComoPossuo()
+        + marcarComoFaltante()
+        + marcarComoRepetida()
+        + alterarQuantidade()
+        + remover()
+      """
+    }
+  }
+
+  statusCartaColecao = enumeracao "StatusCartaColecao" {
+    metadata {
+      valores """POSSUO, FALTANTE, REPETIDA"""
+    }
+  }
+
+  // =====================================================================
+  // MODULO 4 - COMUNIDADE (GRUPOS)
+  // =====================================================================
+
+  grupo = class "Grupo" {
+    metadata {
+      atributos """
+        - id: Long
+        - nome: String
+        - descricao: String
+        - imagemCapaUrl: String
+        - tipoAcesso: TipoAcessoGrupo
+        - status: StatusGrupo
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + criar()
+        + editar()
+        + encerrar()
+        + explorar()
+      """
+    }
+  }
+
+  membroGrupo = class "MembroGrupo" {
+    metadata {
+      atributos """
+        - id: Long
+        - papel: PapelMembro
+        - dataEntrada: DateTime
+        - silenciadoAte: DateTime
+      """
+      metodos """
+        + promoverAAdmin()
+        + silenciarNotificacoes()
+        + remover()
+      """
+    }
+  }
+
+  solicitacaoGrupo = class "SolicitacaoGrupo" {
+    metadata {
+      atributos """
+        - id: Long
+        - status: StatusSolicitacao
+        - dataSolicitacao: DateTime
+        - dataAvaliacao: DateTime
+      """
+      metodos """
+        + solicitar()
+        + aprovar()
+        + recusar()
+      """
+    }
+  }
+
+  mensagemGrupo = class "MensagemGrupo" {
+    metadata {
+      atributos """
+        - id: Long
+        - tipoConteudo: TipoConteudoMsg
+        - conteudo: String
+        - anexoUrl: String
+        - fixada: Boolean
+        - dataEnvio: DateTime
+      """
+      metodos """
+        + enviar()
+        + responder()
+        + fixar()
+        + denunciar()
+      """
+    }
+  }
+
+  enquete = class "Enquete" {
+    metadata {
+      atributos """
+        - id: Long
+        - pergunta: String
+        - multiplaEscolha: Boolean
+        - encerraEm: DateTime
+      """
+      metodos """
+        + criar()
+        + encerrar()
+        + apurarResultado()
+      """
+    }
+  }
+
+  opcaoEnquete = class "OpcaoEnquete" {
+    metadata {
+      atributos """
+        - id: Long
+        - texto: String
+      """
+      metodos """
+        + adicionar()
+      """
+    }
+  }
+
+  votoEnquete = class "VotoEnquete" {
+    metadata {
+      observacoes """Classe associativa N:N (OpcaoEnquete x Usuario), PK composta no DER."""
+      atributos """
+        - dataVoto: DateTime
+      """
+      metodos """
+        + votar()
+      """
+    }
+  }
+
+  tipoAcessoGrupo = enumeracao "TipoAcessoGrupo" {
+    metadata {
+      valores """ABERTO, FECHADO"""
+    }
+  }
+
+  statusGrupo = enumeracao "StatusGrupo" {
+    metadata {
+      valores """ATIVO, SUSPENSO, EXCLUIDO"""
+    }
+  }
+
+  papelMembro = enumeracao "PapelMembro" {
+    metadata {
+      valores """MEMBRO, ADMIN"""
+    }
+  }
+
+  statusSolicitacao = enumeracao "StatusSolicitacao" {
+    metadata {
+      observacoes """Reaproveitado por SolicitacaoGrupo (módulo 4) e SolicitacaoCadastro (módulo 8)."""
+      valores """PENDENTE, APROVADA, RECUSADA"""
+    }
+  }
+
+  tipoConteudoMsg = enumeracao "TipoConteudoMsg" {
+    metadata {
+      valores """TEXTO, IMAGEM, CARTA, ANUNCIO, ENQUETE"""
+    }
+  }
+
+  // =====================================================================
+  // MODULO 5 - CHAT PESSOAL
+  // =====================================================================
+
+  conversa = class "Conversa" {
+    metadata {
+      atributos """
+        - id: Long
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + iniciar()
+        + arquivar()
+      """
+    }
+  }
+
+  participanteConversa = class "ParticipanteConversa" {
+    metadata {
+      observacoes """Classe associativa N:N (Conversa x Usuario), PK composta no DER."""
+      atributos """
+        - dataEntrada: DateTime
+      """
+    }
+  }
+
+  mensagem = class "Mensagem" {
+    metadata {
+      atributos """
+        - id: Long
+        - conteudo: String
+        - anexoUrl: String
+        - lida: Boolean
+        - dataLeitura: DateTime
+        - dataEnvio: DateTime
+      """
+      metodos """
+        + enviar()
+        + responder()
+        + marcarComoLida()
+      """
+    }
+  }
+
+  bloqueioUsuario = class "BloqueioUsuario" {
+    metadata {
+      atributos """
+        - id: Long
+        - dataBloqueio: DateTime
+      """
+      metodos """
+        + bloquear()
+        + desbloquear()
+      """
+    }
+  }
+
+  // =====================================================================
+  // MODULO 6 - MARKETPLACE (ANUNCIOS, PEDIDOS, AVALIACOES)
+  // =====================================================================
+
+  anuncio = class "Anúncio" {
+    metadata {
+      atributos """
+        - id: Long
+        - preco: Decimal
+        - quantidadeDisponivel: Integer
+        - descricao: String
+        - status: StatusAnuncio
+        - dataCriacao: DateTime
+        - dataAtualizacao: DateTime
+      """
+      metodos """
+        + criar()
+        + editar()
+        + excluir()
+        + pausar()
+        + reativar()
+        + alterarPreco()
+        + visualizarDetalhes()
+      """
+    }
+  }
+
+  fotoAnuncio = class "FotoAnuncio" {
+    metadata {
+      atributos """
+        - id: Long
+        - url: String
+        - ordem: Integer
+      """
+      metodos """
+        + adicionar()
+        + remover()
+        + reordenar()
+      """
+    }
+  }
+
+  proposta = class "Proposta" {
+    metadata {
+      atributos """
+        - id: Long
+        - valorOfertado: Decimal
+        - mensagem: String
+        - status: StatusProposta
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + enviar()
+        + aceitar()
+        + recusar()
+        + expirar()
+      """
+    }
+  }
+
+  pedido = class "Pedido" {
+    metadata {
+      observacoes """
+        Pedido não é um carrinho multi-item: no DER cada Pedido referencia
+        UM Anúncio (correção em relação à versão anterior do diagrama, que
+        tinha `ItemPedido` sem lastro no DER).
+      """
+      atributos """
+        - id: Long
+        - quantidade: Integer
+        - valorItens: Decimal
+        - valorFrete: Decimal
+        - valorTotal: Decimal
+        - formaEnvio: String
+        - status: StatusPedido
+        - dataPedido: DateTime
+      """
+      metodos """
+        + calcularTotal()
+        + confirmarPagamento()
+        + marcarComoEnviado()
+        + marcarComoEntregue()
+        + cancelar()
+      """
+    }
+  }
+
+  pagamento = class "Pagamento" {
+    metadata {
+      atributos """
+        - id: Long
+        - metodo: MetodoPagamento
+        - valor: Decimal
+        - status: StatusPagamento
+        - gatewayReferencia: String
+        - dataAtualizacao: DateTime
+      """
+      metodos """
+        + processar()
+        + confirmar()
+        + recusar()
+        + estornar()
+      """
+    }
+  }
+
+  avaliacao = class "Avaliação" {
+    metadata {
+      atributos """
+        - id: Long
+        - nota: Integer
+        - comentario: String
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + criar()
+        + editar()
+        + excluir()
+      """
+    }
+  }
+
+  statusAnuncio = enumeracao "StatusAnuncio" {
+    metadata {
+      valores """ATIVO, PAUSADO, ENCERRADO, EXCLUIDO"""
+    }
+  }
+
+  statusProposta = enumeracao "StatusProposta" {
+    metadata {
+      valores """PENDENTE, ACEITA, RECUSADA, EXPIRADA"""
+    }
+  }
+
+  statusPedido = enumeracao "StatusPedido" {
+    metadata {
+      valores """AGUARDANDO_PAGAMENTO, PAGO, ENVIADO, ENTREGUE, CANCELADO"""
+    }
+  }
+
+  statusPagamento = enumeracao "StatusPagamento" {
+    metadata {
+      valores """PENDENTE, APROVADO, RECUSADO, ESTORNADO"""
+    }
+  }
+
+  // =====================================================================
+  // MODULO 7 - NOTIFICACOES E FAVORITOS
+  // =====================================================================
+
+  favorito = class "Favorito" {
+    metadata {
+      observacoes """Alvo polimórfico: exatamente um entre album/carta/grupo é preenchido, conforme `tipo`."""
+      atributos """
+        - id: Long
+        - tipo: TipoFavorito
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + favoritar()
+        + desfavoritar()
+      """
+    }
+  }
+
+  alertaPreco = class "AlertaPreco" {
+    metadata {
+      observacoes """Funcionalidade futura (tag `futuro`)."""
+      atributos """
+        - id: Long
+        - precoAlvo: Decimal
+        - ativo: Boolean
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + criar()
+        + ativar()
+        + desativar()
+        + verificarPreco()
+      """
+    }
+  }
+
+  notificacaoGlobal = class "NotificacaoGlobal" {
+    metadata {
+      atributos """
+        - id: Long
+        - titulo: String
+        - conteudo: String
+        - totalDestinatarios: Integer
+        - dataDisparo: DateTime
+      """
+      metodos """
+        + disparar()
+      """
+    }
+  }
+
+  notificacao = class "Notificacao" {
+    metadata {
+      atributos """
+        - id: Long
+        - titulo: String
+        - mensagem: String
+        - tipo: String
+        - linkReferencia: String
+        - lida: Boolean
+        - dataCriacao: DateTime
+      """
+      metodos """
+        + marcarComoLida()
+        + limparCentral()
+      """
+    }
+  }
+
+  tipoFavorito = enumeracao "TipoFavorito" {
+    metadata {
+      valores """ALBUM, CARTA, GRUPO"""
+    }
+  }
+
+  // =====================================================================
+  // MODULO 8 - MODERACAO E ADMINISTRACAO
+  // =====================================================================
+
+  denuncia = class "Denuncia" {
+    metadata {
+      observacoes """Alvo polimórfico: anúncio, usuário/vendedor/perfil ou mensagem de grupo, conforme `tipoAlvo`."""
+      atributos """
+        - id: Long
+        - motivo: String
+        - descricao: String
+        - status: StatusDenuncia
+        - dataCriacao: DateTime
+        - dataResolucao: DateTime
+      """
+      metodos """
+        + registrar()
+        + analisar()
+        + resolver()
+        + descartar()
+      """
+    }
+  }
+
+  solicitacaoCadastro = class "SolicitacaoCadastro" {
+    metadata {
+      atributos """
+        - id: Long
+        - tipo: TipoSolicCadastro
+        - dados: JSON
+        - status: StatusSolicitacao
+        - dataCriacao: DateTime
+        - dataAvaliacao: DateTime
+      """
+      metodos """
+        + solicitar()
+        + aprovar()
+        + recusar()
+      """
+    }
+  }
+
+  logAuditoria = class "LogAuditoria" {
+    metadata {
+      atributos """
+        - id: Long
+        - acao: String
+        - entidadeAfetada: String
+        - entidadeId: Long
+        - detalhes: JSON
+        - dataRegistro: DateTime
+      """
+      metodos """
+        + registrar()
+      """
+    }
+  }
+
+  configuracaoGlobal = class "ConfiguracaoGlobal" {
+    metadata {
+      atributos """
+        - id: Long
+        - chave: String
+        - valor: String
+        - descricao: String
+        - dataAtualizacao: DateTime
+      """
+      metodos """
+        + atualizar()
+      """
+    }
+  }
+
+  tipoAlvoDenuncia = enumeracao "TipoAlvoDenuncia" {
+    metadata {
+      valores """ANUNCIO, VENDEDOR, USUARIO, PERFIL, MENSAGEM_GRUPO"""
+    }
+  }
+
+  statusDenuncia = enumeracao "StatusDenuncia" {
+    metadata {
+      valores """PENDENTE, EM_ANALISE, RESOLVIDA, DESCARTADA"""
+    }
+  }
+
+  tipoSolicCadastro = enumeracao "TipoSolicCadastro" {
+    metadata {
+      valores """CARTA, ALBUM, CATEGORIA"""
+    }
+  }
+
+  // =====================================================================
+  // RELACOES - HERANCA (generalizacao: subclasse -> superclasse)
+  // =====================================================================
+  cliente -> usuario "herda de (generalização)"
+  vendedor -> usuario "herda de (generalização)"
+  administrador -> usuario "herda de (generalização)"
+
+  // =====================================================================
+  // RELACOES - MODULO 1
+  // =====================================================================
+  perfil -> usuario "1 -- 1 : pertence a"
+  endereco -> usuario "N -- 1 : pertence a"
+  tokenRecuperacaoSenha -> usuario "N -- 1 : emitido para"
+  usuarioConquista -> usuario "N -- 1"
+  usuarioConquista -> conquista "N -- 1"
+  assinatura -> usuario "N -- 1"
+
+  // =====================================================================
+  // RELACOES - MODULO 2
+  // =====================================================================
+  categoria -> categoria "0..1 -- N : categoria pai"
+  album -> categoria "N -- 0..1"
+  carta -> album "N -- 0..1 : nulo = carta avulsa"
+  carta -> categoria "N -- 0..1"
+  carta -> raridade "N -- 0..1"
+  carta -> idioma "N -- 0..1"
+  fotoCarta -> carta "N -- 1 : compõe"
+  historicoPreco -> carta "N -- 1"
+
+  // =====================================================================
+  // RELACOES - MODULO 3
+  // =====================================================================
+  colecao -> usuario "1 -- 1 : pertence a"
+  albumUsuario -> colecao "N -- 1"
+  albumUsuario -> album "N -- 1"
+  colecaoCarta -> colecao "N -- 1"
+  colecaoCarta -> carta "N -- 1"
+
+  // =====================================================================
+  // RELACOES - MODULO 4
+  // =====================================================================
+  grupo -> usuario "N -- 1 : criado por"
+  membroGrupo -> grupo "N -- 1"
+  membroGrupo -> usuario "N -- 1"
+  solicitacaoGrupo -> grupo "N -- 1"
+  solicitacaoGrupo -> usuario "N -- 1 : solicitante"
+  solicitacaoGrupo -> administrador "0..1 -- N : avaliado por"
+  mensagemGrupo -> grupo "N -- 1"
+  mensagemGrupo -> usuario "N -- 1 : autor"
+  mensagemGrupo -> mensagemGrupo "0..1 -- N : responde a"
+  mensagemGrupo -> carta "0..1 -- N : referencia"
+  mensagemGrupo -> anuncio "0..1 -- N : referencia"
+  enquete -> mensagemGrupo "1 -- 1 : compõe"
+  opcaoEnquete -> enquete "N -- 1 : compõe"
+  votoEnquete -> opcaoEnquete "N -- 1"
+  votoEnquete -> usuario "N -- 1"
+
+  // =====================================================================
+  // RELACOES - MODULO 5
+  // =====================================================================
+  conversa -> anuncio "0..1 -- N : originada de"
+  participanteConversa -> conversa "N -- 1"
+  participanteConversa -> usuario "N -- 1"
+  mensagem -> conversa "N -- 1"
+  mensagem -> usuario "N -- 1 : autor"
+  mensagem -> mensagem "0..1 -- N : responde a"
+  bloqueioUsuario -> usuario "N -- 1 : bloqueador"
+  bloqueioUsuario -> usuario "N -- 1 : bloqueado"
+
+  // =====================================================================
+  // RELACOES - MODULO 6
+  // =====================================================================
+  anuncio -> vendedor "N -- 1 : anunciado por"
+  anuncio -> carta "N -- 1"
+  anuncio -> estadoConservacao "N -- 0..1"
+  fotoAnuncio -> anuncio "N -- 1 : compõe"
+  proposta -> anuncio "N -- 1"
+  proposta -> usuario "N -- 1 : comprador"
+  pedido -> anuncio "N -- 1"
+  pedido -> usuario "N -- 1 : comprador"
+  pedido -> vendedor "N -- 1"
+  pedido -> endereco "N -- 1 : entrega"
+  pagamento -> pedido "1 -- 1"
+  avaliacao -> pedido "1 -- 1"
+  avaliacao -> usuario "N -- 1 : autor"
+  avaliacao -> vendedor "N -- 1 : avaliado"
+
+  // =====================================================================
+  // RELACOES - MODULO 7
+  // =====================================================================
+  favorito -> usuario "N -- 1"
+  favorito -> album "0..1 -- N : alvo (conforme tipo)"
+  favorito -> carta "0..1 -- N : alvo (conforme tipo)"
+  favorito -> grupo "0..1 -- N : alvo (conforme tipo)"
+  alertaPreco -> usuario "N -- 1"
+  alertaPreco -> carta "N -- 1"
+  notificacaoGlobal -> administrador "N -- 1"
+  notificacao -> usuario "N -- 1"
+  notificacao -> notificacaoGlobal "0..1 -- N : originada de"
+
+  // =====================================================================
+  // RELACOES - MODULO 8
+  // =====================================================================
+  denuncia -> usuario "N -- 1 : denunciante"
+  denuncia -> administrador "0..1 -- N : moderador"
+  denuncia -> anuncio "0..1 -- N : alvo (conforme tipo)"
+  denuncia -> usuario "0..1 -- N : alvo (conforme tipo)"
+  denuncia -> mensagemGrupo "0..1 -- N : alvo (conforme tipo)"
+  solicitacaoCadastro -> usuario "N -- 1 : solicitante"
+  solicitacaoCadastro -> administrador "0..1 -- N : avaliado por"
+  solicitacaoCadastro -> carta "0..1 -- 1 : item criado"
+  solicitacaoCadastro -> album "0..1 -- 1 : item criado"
+  logAuditoria -> administrador "N -- 1"
+  configuracaoGlobal -> administrador "0..1 -- N : atualizado por"
+
+}
+
+views {
+
+  view heranca_usuarios {
+    title "Herança dos tipos de usuário"
+    include usuario, cliente, vendedor, administrador
+    autoLayout TopBottom
+  }
+
+  view modulo1_usuarios_perfil_acesso {
+    title "Módulo 1 - Usuários, Perfil e Acesso"
+    include usuario, cliente, vendedor, administrador, perfil, endereco,
+      tokenRecuperacaoSenha, conquista, usuarioConquista, assinatura,
+      tipoUsuario, statusUsuario, privacidade, statusPlano, metodoPagamento
+    autoLayout LeftRight
+  }
+
+  view modulo2_catalogo_global {
+    title "Módulo 2 - Catálogo Global"
+    include categoria, raridade, idioma, estadoConservacao, album, carta,
+      fotoCarta, historicoPreco, tipoCategoria, statusAlbum, origemPreco
+    autoLayout LeftRight
+  }
+
+  view modulo3_colecao_cliente {
+    title "Módulo 3 - Coleção do Cliente"
+    include colecao, albumUsuario, colecaoCarta, album, carta, usuario,
+      statusCartaColecao
+    autoLayout LeftRight
+  }
+
+  view modulo4_comunidade_grupos {
+    title "Módulo 4 - Comunidade (Grupos)"
+    include grupo, membroGrupo, solicitacaoGrupo, mensagemGrupo, enquete,
+      opcaoEnquete, votoEnquete, usuario, administrador, carta, anuncio,
+      tipoAcessoGrupo, statusGrupo, papelMembro, statusSolicitacao,
+      tipoConteudoMsg
+    autoLayout LeftRight
+  }
+
+  view modulo5_chat_pessoal {
+    title "Módulo 5 - Chat Pessoal"
+    include conversa, participanteConversa, mensagem, bloqueioUsuario,
+      usuario, anuncio
+    autoLayout LeftRight
+  }
+
+  view modulo6_marketplace {
+    title "Módulo 6 - Marketplace"
+    include anuncio, fotoAnuncio, proposta, pedido, pagamento, avaliacao,
+      vendedor, usuario, carta, estadoConservacao, endereco,
+      statusAnuncio, statusProposta, statusPedido, statusPagamento,
+      metodoPagamento
+    autoLayout LeftRight
+  }
+
+  view modulo7_notificacoes_favoritos {
+    title "Módulo 7 - Notificações e Favoritos"
+    include favorito, alertaPreco, notificacaoGlobal, notificacao, usuario,
+      administrador, album, carta, grupo, tipoFavorito
+    autoLayout LeftRight
+  }
+
+  view modulo8_moderacao_administracao {
+    title "Módulo 8 - Moderação e Administração"
+    include denuncia, solicitacaoCadastro, logAuditoria, configuracaoGlobal,
+      usuario, administrador, anuncio, mensagemGrupo, carta, album,
+      tipoAlvoDenuncia, statusDenuncia, tipoSolicCadastro, statusSolicitacao
+    autoLayout LeftRight
+  }
+
+  view visao_geral_completa {
+    title "Visão Geral - Diagrama de Classes CromoCard (43 classes)"
+    description "Uso apenas para conferência - denso demais para apresentação/projeção. Use as views por módulo para a banca."
+    include *
+    autoLayout LeftRight
+  }
+
+}
