@@ -13,7 +13,9 @@ escreva commits em português.
 ```
 ESCOLA-TI/                         (repo de documentação/workspace — branch de trabalho: development, principal: main)
 ├── docs/
+│   ├── ADR/                       0001–00NN-titulo.md + README.md (índice) — decisões de arquitetura, status Pendente/Aceita/Rejeitada/Substituída
 │   ├── Casos-De-Uso/              NN-nome-do-caso.md (01–93), user-stories.md, resumo-user-stories.md, CromoCard 1.xlsx
+│   ├── Diagrama-de-Classe/        cromocard-diagrama-classes.v2.c4 (LikeC4, atual) + .v1.c4 (histórico) + README.md — 43 classes, 1:1 com o DER
 │   └── Diagramas/
 │       ├── DER/                   puml/, dbdiagram.io/ (DBML), chartdb/ (DDL PostgreSQL) + README.md
 │       ├── Diagramas-C4/          01-contexto, 02-containers, 03-componentes (.puml + .svg)
@@ -138,4 +140,5 @@ A tabela de rastreabilidade entidade → caso de uso está em `docs/Diagramas/DE
 ## Git
 
 - Branch de trabalho: `development`; PRs para `main`.
-- Commits em português, no estilo já usado (`docs: ...`, `feat: ...`).
+- Commits em português, padrão Conventional Commits (`docs: ...`, `feat: ...`) — guia completo
+  (tipos, escopo, exemplos, PRs) em `CONTRIBUTING.md`.
