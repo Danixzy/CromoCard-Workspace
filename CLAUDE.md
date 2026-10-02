@@ -21,6 +21,7 @@ ESCOLA-TI/                         (repo de documentação/workspace — branch 
 │       ├── Diagramas-C4/          01-contexto, 02-containers, 03-componentes (.puml + .svg)
 │       ├── Diagrama-Casos-de-Uso/ cromocard_casos_de_uso.puml (CCD001–CCD046)
 │       └── Diagrama-Atividades/   Diagrama_Atividades.c4 (LikeC4, CCD001–CCD066)
+├── docs/Processo/                 governanca-e-acessos.md — papéis, acessos, auditoria, onboarding
 ├── Azure-Devops/                  organização do board, mapa de artefatos por autor, board-cromocard.html
 ├── apps/                          (não versionado neste repo — cada app é um repo git próprio)
 │   ├── Backend-CromoCard/         github.com/Danixzy/Backend-CromoCard   (ainda vazio: só README)
@@ -139,6 +140,8 @@ A tabela de rastreabilidade entidade → caso de uso está em `docs/Diagramas/DE
 
 ## Git
 
-- Branch de trabalho: `development`; PRs para `main`.
-- Commits em português, padrão Conventional Commits (`docs: ...`, `feat: ...`) — guia completo
-  (tipos, escopo, exemplos, PRs) em `CONTRIBUTING.md`.
+- **Nunca commitar direto em `development`/`homolog`/`main`.** 1 Task do Azure = 1 branch
+  `<tipo>/<id>-<descricao>` saída de `development` = 1 PR para `development`, revisado pelo PO.
+- Commits em português, Conventional Commits, com rodapé `AB#<id>` (não `#id`, que liga ao GitHub).
+  PR com `Fixes AB#<id>` e merge por squash. Guia completo em `CONTRIBUTING.md`; papéis e acessos
+  em `docs/Processo/governanca-e-acessos.md`; o porquê no ADR-0018.

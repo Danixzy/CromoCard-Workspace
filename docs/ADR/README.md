@@ -43,3 +43,7 @@ implícita nos diagramas e no modelo de dados, para que possa ser **validada
 | [0015](0015-heranca-tipos-usuario-diagrama-classes.md) | Herança de tipos de usuário no diagrama de classes (Single Table Inheritance) | Pendente |
 | [0016](0016-granularidade-diagrama-classes.md) | Granularidade do diagrama de classes (1:1 com as 43 entidades do DER) | Pendente |
 | [0017](0017-notacao-relacionamento-diagrama-classes.md) | Notação de relacionamento no diagrama de classes (rótulo textual) | Pendente |
+| [0018](0018-estrategia-versionamento-rastreabilidade-azure-github.md) | Estratégia de versionamento e rastreabilidade Azure DevOps ↔ GitHub | Pendente |
+
+> A partir do ADR-0018, os ADRs registram decisões **novas** do time (não extraídas dos artefatos)
+> e entram no repositório por Pull Request, revisados pelo PO — ver `CONTRIBUTING.md`.
