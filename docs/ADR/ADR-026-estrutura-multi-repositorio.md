@@ -1,8 +1,8 @@
-# ADR-0013: Estrutura multi-repositório (documentação separada das aplicações)
+# ADR-026 — Estrutura multi-repositório (documentação separada das aplicações)
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
@@ -16,6 +16,10 @@ repositório (`CROMOCARD-WORKSPACE`) guarda apenas documentação e artefatos de
 
 Manter repositórios Git separados por responsabilidade: um repositório de documentação/artefatos
 (este), um repositório para o backend e um para o frontend web — sem monorepo único.
+
+Este repositório (workspace) é usado para o **SDD (Spec-Driven Development)** e a documentação
+do backend e do frontend: as especificações e a documentação ficam aqui, e o código fica no
+repositório de cada aplicação.
 
 ## Alternativas consideradas
 

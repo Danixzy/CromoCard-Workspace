@@ -1,8 +1,8 @@
-# ADR-0017: Notação de relacionamento no diagrama de classes (rótulo textual)
+# ADR-037 — Notação de relacionamento no diagrama de classes (rótulo textual)
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
@@ -51,7 +51,7 @@ A legenda completa está em `docs/Diagrama-de-Classe/README.md`.
   trocar de ferramenta.
 - Rótulos textuais longos podem poluir diagramas com muitas relações concentradas em um nó
   (ex.: `Usuario`, que recebe dezenas de relações) — mitigado por dividir em views por módulo
-  (ver ADR-0016).
+  (ver ADR-036).
 
 ## Referências
 

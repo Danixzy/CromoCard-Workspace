@@ -1,8 +1,8 @@
-# ADR-0003: Stack do aplicativo mobile: React Native
+# ADR-023 — Stack do aplicativo mobile: React Native
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
@@ -15,7 +15,7 @@ Consome a mesma API REST que a Web e o BackOffice.
 Construir o aplicativo mobile (iOS/Android) com React Native, como app nativo instalável, e não
 como PWA ou apps nativos separados por plataforma.
 
-## Alternativas considerada
+## Alternativas consideradas
 
 - **PWA único** cobrindo mobile e web sem app nativo instalável.
 - **Flutter** (Dart) como framework multiplataforma alternativo.

@@ -1,8 +1,8 @@
-# ADR-0016: Granularidade do diagrama de classes (1:1 com as 43 entidades do DER)
+# ADR-036 — Granularidade do diagrama de classes (1:1 com as 43 entidades do DER)
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
@@ -28,7 +28,7 @@ negócio.
   mais enxuto e focado em comportamento rico, mas quebra a rastreabilidade 1:1 com o DER e exige
   justificar, para cada tabela ausente, por que ela "não é uma classe".
 - **Diagrama só do MVP**: cobrir apenas as entidades das user stories sem marcador `**`/`***`
-  (tag `mvp`) — reduziria o diagrama, mas colide com a ADR-0014 (escopo do Marketplace no MVP),
+  (tag `mvp`) — reduziria o diagrama, mas colide com a ADR-027 (escopo do Marketplace no MVP),
   que ainda está em aberto; fazer isso agora seria decidir os dois problemas ao mesmo tempo.
 
 ## Consequências

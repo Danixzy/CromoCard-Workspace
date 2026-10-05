@@ -1,8 +1,8 @@
-# ADR-0009: Integração com transportadora terceirizada para entrega física
+# ADR-025 — Integração com transportadora terceirizada para entrega física
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
