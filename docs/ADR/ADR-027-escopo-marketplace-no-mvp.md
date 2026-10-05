@@ -1,9 +1,8 @@
-# ADR-0014: Escopo do Marketplace no MVP (decisão em aberto)
+# ADR-027 — Escopo do Marketplace no MVP (decisão em aberto)
 
-## Status
-
-**Pendente** — decisão ainda não tomada pela equipe; identificado em 29/09/2026 como bloqueio
-explícito para a banca.
+- **Status:** Proposto (decisão ainda não tomada pela equipe; bloqueio explícito para a banca)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 > Este ADR é diferente dos demais: não documenta uma escolha já implícita nos diagramas, e sim
 > uma **inconsistência não resolvida** entre os artefatos, que precisa virar decisão formal do PO.
@@ -43,7 +42,7 @@ parte da primeira entrega.
 
 Esta decisão impacta diretamente:
 
-- **ADR-0008** (gateway de pagamento) e **ADR-0009** (transportadora) — se ficarem fora do MVP,
+- **ADR-024** (gateway de pagamento) e **ADR-025** (transportadora) — se ficarem fora do MVP,
   essas integrações não precisam estar prontas na primeira entrega.
 - O cronograma de sprints e o corte de escopo do board no Azure DevOps.
 - Os slides 9, 12 e 16 da apresentação de banca (`Apresentacao-Banca/`), hoje marcados como

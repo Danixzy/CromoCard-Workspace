@@ -1,8 +1,8 @@
-# ADR-0011: Convenções de modelagem de dados (nomenclatura, PK, associativas N:N)
+# ADR-033 — Convenções de modelagem de dados (nomenclatura, PK, associativas N:N)
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Substituído por ADR-003 e ADR-014
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 

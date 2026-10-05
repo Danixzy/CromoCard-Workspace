@@ -1,8 +1,8 @@
-# ADR-0004: Stack de backend: Node.js + Express + Prisma
+# ADR-028 — Stack de backend: Node.js + Express + Prisma
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Substituído por ADR-002
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 

@@ -1,8 +1,8 @@
-# ADR-0012: Trilha de auditoria obrigatória para ações administrativas
+# ADR-034 — Trilha de auditoria obrigatória para ações administrativas
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 

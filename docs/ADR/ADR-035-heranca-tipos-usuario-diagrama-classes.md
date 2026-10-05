@@ -1,8 +1,8 @@
-# ADR-0015: Herança de tipos de usuário no diagrama de classes (Single Table Inheritance)
+# ADR-035 — Herança de tipos de usuário no diagrama de classes (Single Table Inheritance)
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 

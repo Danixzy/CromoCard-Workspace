@@ -1,8 +1,8 @@
-# ADR-0005: Banco de dados relacional: PostgreSQL via Prisma ORM
+# ADR-029 — Banco de dados relacional: PostgreSQL via Prisma ORM
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Substituído por ADR-003 e ADR-014
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
@@ -29,7 +29,7 @@ Usar PostgreSQL como único banco de dados do sistema, para todos os 8 módulos 
 **Positivas**
 - Enums nativos e `jsonb` cobrem os casos especiais do modelo sem tabelas extras.
 - Consistência ACID garantida para fluxos sensíveis (pagamento, pedido, estoque de anúncio).
-- Integridade referencial via 76 FKs, incluindo os alvos polimórficos (ver ADR-0010).
+- Integridade referencial via 76 FKs, incluindo os alvos polimórficos (ver ADR-032).
 
 **Negativas / riscos**
 - Todas as cargas caem no mesmo banco relacional, incluindo mensagens de chat em potencial alto

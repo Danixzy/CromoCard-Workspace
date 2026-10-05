@@ -1,15 +1,15 @@
-# ADR-0007: Serviço de mensageria em tempo real como container dedicado
+# ADR-031 — Serviço de mensageria em tempo real como container dedicado
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Substituído por ADR-007 e ADR-012
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
 O C4 Nível 2 separa o **Serviço de Mensageria em Tempo Real** (Node.js + WebSocket) da **API de
 Aplicação** (Node.js + Express), como dois containers distintos que acessam o mesmo banco
 PostgreSQL via Prisma ORM. O serviço entrega chat pessoal e de grupo em tempo real, com conexão
-autenticada via JWT (ver ADR-0006).
+autenticada via JWT (ver ADR-030).
 
 ## Decisão
 

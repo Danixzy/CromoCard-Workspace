@@ -1,8 +1,8 @@
-# ADR-0006: Autenticação via JWT compartilhado entre API REST e serviço de tempo real
+# ADR-030 — Autenticação via JWT compartilhado entre API REST e serviço de tempo real
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Substituído por ADR-005
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 

@@ -1,16 +1,16 @@
-# ADR-0008: Integração com gateway de pagamento externo via HTTPS/Webhook
+# ADR-024 — Integração com gateway de pagamento externo via HTTPS/Webhook
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
 O Diagrama de Contexto e o de Containers definem um sistema externo "Gateway de Pagamento
 (ex.: Stripe/Mercado Pago)" que "processa pagamentos de compras no marketplace e assinaturas do
 plano PRO" via HTTPS/Webhook. No C4 Nível 3, o Módulo de Pagamentos e Pedidos integra com esse
-gateway. O DER prevê `metodo_pagamento` (`CARTAO_CREDITO`, `PIX`, `BOLETO`) e a entidade
-`pagamento`.
+gateway. O DER prevê o enum `payment_method` (`CREDIT_CARD`, `PIX`, `BOLETO`) e a tabela
+`payments`.
 
 ## Decisão
 

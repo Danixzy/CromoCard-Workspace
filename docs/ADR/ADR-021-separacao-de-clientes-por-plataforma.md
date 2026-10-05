@@ -1,8 +1,8 @@
-# ADR-0001: Separação das aplicações cliente por plataforma (Web, Mobile, BackOffice)
+# ADR-021 — Separação das aplicações cliente por plataforma (Web, Mobile, BackOffice)
 
-## Status
-
-**Pendente** — identificado em 29/09/2026, aguardando validação do PO.
+- **Status:** Proposto (aguardando validação do PO)
+- **Data:** 2026-09-29
+- **Decisores:** Equipe CromoCard
 
 ## Contexto
 
@@ -25,7 +25,7 @@ próprio, todas consumindo a mesma API de Aplicação via REST/JSON.
 
 - **SPA único responsivo** (com PWA) cobrindo web e mobile, sem app nativo.
 - **BackOffice como módulo** dentro do mesmo SPA do cliente, com rotas protegidas por papel
-  (`tipo_usuario = ADMINISTRADOR`).
+  (`role = ADMIN`).
 
 ## Consequências
 
