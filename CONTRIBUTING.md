@@ -89,18 +89,19 @@ Closes #143
 
 ## 4. ADRs (Architecture Decision Records)
 
-- Ficam em `docs/ADR/`, uma por arquivo (`000X-titulo.md`), indexadas em `docs/ADR/README.md`.
-- Toda ADR nasce com **`Status: Pendente`** — só vira `Aceita`/`Rejeitada`/`Substituída` depois de
-  validada com o PO.
+- Ficam em `docs/ADR/`, uma por arquivo (`ADR-XXX-titulo.md`), indexadas em `docs/ADR/README.md`,
+  que também traz o modelo.
+- Toda ADR nasce com **`Status: Proposto`** — só vira `Aceito`/`Rejeitado`/`Substituído por ADR-XXX`
+  depois de validada com o PO.
 - Crie uma ADR nova quando: escolher uma tecnologia/biblioteca nova, mudar algo que os diagramas
   (C4/DER/diagrama de classes) já davam como decidido, ou resolver uma decisão que hoje está em
-  aberto (como a ADR-0014, escopo do marketplace no MVP).
+  aberto (como a ADR-027, escopo do marketplace no MVP).
 
 ## 5. Manter os diagramas sincronizados
 
 - `docs/Diagramas/DER/dbdiagram.io/03-der-completo.dbml` é a fonte da verdade do modelo de dados —
   os `.sql` e `.puml` são derivados dele.
 - `docs/Diagrama-de-Classe/cromocard-diagrama-classes.c4` deve continuar 1:1 com o DER (ver
-  ADR-0016). Se uma entidade for criada/alterada no DER, atualize a classe correspondente.
+  ADR-036). Se uma entidade for criada/alterada no DER, atualize a classe correspondente.
 - Exporte diagramas em **SVG**, nunca PNG (o servidor público do PlantUML corta PNG em 4096px —
   ver `docs/Diagramas/DER/README.md`).

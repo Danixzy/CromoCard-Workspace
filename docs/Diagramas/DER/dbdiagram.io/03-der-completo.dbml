@@ -2,7 +2,7 @@
 //  CromoCard - Sistema de Gestao de Cartas Colecionaveis
 //  3/3 - DER COMPLETO (entidades + atributos + relacionamentos)
 //  Cole em https://dbdiagram.io/d
-//  Organizacao: 43 tabelas, 8 modulos (cores por modulo + TableGroup),
+//  Organizacao: 44 tabelas, 8 modulos (cores por modulo + TableGroup),
 //  relacionamentos declarados no final, agrupados por modulo.
 //  Export sugerido para o relatorio: PDF ou PNG (botao Export).
 // =====================================================================
@@ -15,609 +15,717 @@ Project CromoCard {
 // ---------------------------------------------------------------------
 // ENUMS
 // ---------------------------------------------------------------------
-Enum tipo_usuario {
-  CLIENTE
-  VENDEDOR
-  ADMINISTRADOR
-}
-
-Enum status_usuario {
-  ATIVO
-  SUSPENSO
-  EXCLUIDO
-}
-
-Enum privacidade {
-  PUBLICO
-  PRIVADO
-}
-
-Enum tipo_categoria {
-  ALBUM
-  CARTA
-}
-
-Enum status_album {
-  ATIVO
-  INATIVO
-}
-
-Enum origem_preco {
-  VENDA
-  ANUNCIO
-}
-
-Enum status_plano {
-  ATIVA
-  CANCELADA
-  EXPIRADA
-}
-
-Enum status_carta_colecao {
-  POSSUO
-  FALTANTE
-  REPETIDA
-}
-
-Enum tipo_acesso_grupo {
-  ABERTO
-  FECHADO
-}
-
-Enum status_grupo {
-  ATIVO
-  SUSPENSO
-  EXCLUIDO
-}
-
-Enum papel_membro {
-  MEMBRO
+Enum user_role {
+  CUSTOMER
+  SELLER
   ADMIN
 }
 
-Enum status_solicitacao {
-  PENDENTE
-  APROVADA
-  RECUSADA
+Enum user_status {
+  ACTIVE
+  SUSPENDED
 }
 
-Enum tipo_conteudo_msg {
-  TEXTO
-  IMAGEM
-  CARTA
-  ANUNCIO
-  ENQUETE
+Enum privacy {
+  PUBLIC
+  PRIVATE
 }
 
-Enum status_anuncio {
-  ATIVO
-  PAUSADO
-  ENCERRADO
-  EXCLUIDO
+Enum category_type {
+  ALBUM
+  CARD
 }
 
-Enum status_proposta {
-  PENDENTE
-  ACEITA
-  RECUSADA
-  EXPIRADA
+Enum album_status {
+  ACTIVE
+  INACTIVE
 }
 
-Enum status_pedido {
-  AGUARDANDO_PAGAMENTO
-  PAGO
-  ENVIADO
-  ENTREGUE
-  CANCELADO
+Enum price_source {
+  SALE
+  LISTING
 }
 
-Enum metodo_pagamento {
-  CARTAO_CREDITO
+Enum subscription_status {
+  ACTIVE
+  CANCELED
+  EXPIRED
+}
+
+Enum collection_card_status {
+  OWNED
+  MISSING
+  DUPLICATE
+}
+
+Enum group_access_type {
+  OPEN
+  CLOSED
+}
+
+Enum group_status {
+  ACTIVE
+  SUSPENDED
+}
+
+Enum member_role {
+  MEMBER
+  ADMIN
+}
+
+Enum request_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum message_content_type {
+  TEXT
+  IMAGE
+  CARD
+  LISTING
+  POLL
+}
+
+Enum listing_status {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+Enum offer_status {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+Enum order_status {
+  AWAITING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELED
+}
+
+Enum payment_method {
+  CREDIT_CARD
   PIX
   BOLETO
 }
 
-Enum status_pagamento {
-  PENDENTE
-  APROVADO
-  RECUSADO
-  ESTORNADO
+Enum payment_status {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
 }
 
-Enum tipo_favorito {
+Enum favorite_type {
   ALBUM
-  CARTA
-  GRUPO
+  CARD
+  GROUP
 }
 
-Enum tipo_alvo_denuncia {
-  ANUNCIO
-  VENDEDOR
-  USUARIO
-  PERFIL
-  MENSAGEM_GRUPO
+Enum report_target_type {
+  LISTING
+  SELLER
+  USER
+  PROFILE
+  GROUP_MESSAGE
 }
 
-Enum status_denuncia {
-  PENDENTE
-  EM_ANALISE
-  RESOLVIDA
-  DESCARTADA
+Enum report_status {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
 }
 
-Enum tipo_solic_cadastro {
-  CARTA
+Enum catalog_request_type {
+  CARD
   ALBUM
-  CATEGORIA
+  CATEGORY
 }
 
 // =====================================================================
 // MODULO 1 - USUARIOS, PERFIL E ACESSO
 // =====================================================================
-Table usuario [headercolor: #3E5F8A] {
-  id               bigint         [pk, increment]
-  nome             varchar(120)   [not null]
-  email            varchar(160)   [not null, unique]
-  senha_hash       varchar(255)
-  tipo_usuario     tipo_usuario   [not null]
-  status           status_usuario [not null, default: 'ATIVO']
-  email_confirmado boolean        [not null, default: false]
-  aceite_termos    boolean        [not null, default: false]
-  oauth_provider   varchar(30)
-  oauth_id         varchar(120)
-  data_cadastro    timestamp      [not null, default: `now()`]
-  data_exclusao    timestamp
+Table users [headercolor: #3E5F8A] {
+  id             uuid         [pk, default: `uuidv7()`]
+  name           varchar(120) [not null]
+  email          varchar(160) [not null, unique]
+  password_hash  varchar(255)
+  role           user_role    [not null]
+  status         user_status  [not null, default: 'ACTIVE']
+  email_verified boolean      [not null, default: false]
+  terms_accepted boolean      [not null, default: false]
+  oauth_provider varchar(30)
+  oauth_id       varchar(120)
+  created_at     timestamptz  [not null, default: `now()`]
+  updated_at     timestamptz  [not null, default: `now()`, note: 'Atualizado pelo Prisma (@updatedAt)']
+  deleted_at     timestamptz  [note: 'Soft delete (ADR-015)']
   Note: 'Conta unica da plataforma; o tipo define o acesso (Cliente, Vendedor, Administrador).'
 }
 
-Table perfil [headercolor: #3E5F8A] {
-  id                    bigint      [pk, increment]
-  usuario_id            bigint      [not null, unique]
-  bio                   text
-  avatar_url            varchar(255)
-  cidade                varchar(120)
-  privacidade_portfolio privacidade [not null, default: 'PUBLICO']
+Table profiles [headercolor: #3E5F8A] {
+  id                uuid         [pk, default: `uuidv7()`]
+  user_id           uuid         [not null, unique]
+  bio               text
+  avatar_url        varchar(255)
+  city              varchar(120)
+  portfolio_privacy privacy      [not null, default: 'PUBLIC']
+  created_at        timestamptz  [not null, default: `now()`]
+  updated_at        timestamptz  [not null, default: `now()`]
+  deleted_at        timestamptz
 }
 
-Table endereco [headercolor: #3E5F8A] {
-  id          bigint       [pk, increment]
-  usuario_id  bigint       [not null]
-  rotulo      varchar(60)  [not null]
-  cep         varchar(9)   [not null]
-  logradouro  varchar(160) [not null]
-  numero      varchar(15)  [not null]
-  complemento varchar(60)
-  bairro      varchar(90)  [not null]
-  cidade      varchar(90)  [not null]
-  estado      char(2)      [not null]
-  principal   boolean      [not null, default: false]
+Table addresses [headercolor: #3E5F8A] {
+  id           uuid         [pk, default: `uuidv7()`]
+  user_id      uuid         [not null]
+  label        varchar(60)  [not null]
+  zip_code     varchar(9)   [not null]
+  street       varchar(160) [not null]
+  number       varchar(15)  [not null]
+  complement   varchar(60)
+  neighborhood varchar(90)  [not null]
+  city         varchar(90)  [not null]
+  state        char(2)      [not null]
+  is_primary   boolean      [not null, default: false]
+  created_at   timestamptz  [not null, default: `now()`]
+  updated_at   timestamptz  [not null, default: `now()`]
+  deleted_at   timestamptz
 }
 
-Table token_recuperacao_senha [headercolor: #3E5F8A] {
-  id           bigint       [pk, increment]
-  usuario_id   bigint       [not null]
-  token        varchar(255) [not null, unique]
-  expira_em    timestamp    [not null]
-  usado        boolean      [not null, default: false]
-  data_criacao timestamp    [not null, default: `now()`]
+Table password_reset_tokens [headercolor: #3E5F8A] {
+  id         uuid         [pk, default: `uuidv7()`]
+  user_id    uuid         [not null]
+  token      varchar(255) [not null, unique]
+  expires_at timestamptz  [not null]
+  used       boolean      [not null, default: false]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table conquista [headercolor: #3E5F8A] {
-  id        bigint       [pk, increment]
-  nome      varchar(90)  [not null, unique]
-  descricao varchar(255) [not null]
-  icone_url varchar(255)
-  criterio  varchar(255) [not null]
+Table refresh_tokens [headercolor: #3E5F8A] {
+  id         uuid         [pk, default: `uuidv7()`]
+  user_id    uuid         [not null]
+  token_hash varchar(255) [not null, unique, note: 'Hash (SHA-256) do refresh token; o valor puro nunca e salvo']
+  expires_at timestamptz  [not null, note: 'Mais longo quando o usuario marca "lembrar usuario"']
+  revoked_at timestamptz  [note: 'Preenchido no logout ou na rotacao do token']
+  user_agent varchar(255)
+  ip_address varchar(45)
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
+  Note: 'Sessoes de login (JWT access token curto + refresh token rotativo).'
 }
 
-Table usuario_conquista [headercolor: #3E5F8A] {
-  usuario_id    bigint    [not null]
-  conquista_id  bigint    [not null]
-  data_obtencao timestamp [not null, default: `now()`]
+Table achievements [headercolor: #3E5F8A] {
+  id          uuid         [pk, default: `uuidv7()`]
+  name        varchar(90)  [not null, unique]
+  description varchar(255) [not null]
+  icon_url    varchar(255)
+  criteria    varchar(255) [not null]
+  created_at  timestamptz  [not null, default: `now()`]
+  updated_at  timestamptz  [not null, default: `now()`]
+  deleted_at  timestamptz
+}
+
+Table user_achievements [headercolor: #3E5F8A] {
+  user_id        uuid        [not null]
+  achievement_id uuid        [not null]
+  created_at     timestamptz [not null, default: `now()`]
+  updated_at     timestamptz [not null, default: `now()`]
+  deleted_at     timestamptz
   indexes {
-    (usuario_id, conquista_id) [pk]
+    (user_id, achievement_id) [pk]
   }
 }
 
-Table assinatura [headercolor: #3E5F8A] {
-  id                 bigint           [pk, increment]
-  usuario_id         bigint           [not null]
-  plano              varchar(20)      [not null, default: 'PRO']
-  status             status_plano     [not null, default: 'ATIVA']
-  metodo_pagamento   metodo_pagamento [not null]
-  data_inicio        date             [not null]
-  data_fim           date
-  gateway_referencia varchar(120)
+Table subscriptions [headercolor: #3E5F8A] {
+  id                uuid                [pk, default: `uuidv7()`]
+  user_id           uuid                [not null]
+  plan              varchar(20)         [not null, default: 'PRO']
+  status            subscription_status [not null, default: 'ACTIVE']
+  payment_method    payment_method      [not null]
+  start_date        date                [not null]
+  end_date          date
+  gateway_reference varchar(120)
+  created_at        timestamptz         [not null, default: `now()`]
+  updated_at        timestamptz         [not null, default: `now()`]
+  deleted_at        timestamptz
   Note: 'Plano PRO (funcionalidade futura).'
 }
 
 // =====================================================================
 // MODULO 2 - CATALOGO GLOBAL (ALBUNS E CARTAS)
 // =====================================================================
-Table categoria [headercolor: #2E7D5B] {
-  id               bigint         [pk, increment]
-  categoria_pai_id bigint         [note: 'Hierarquia: selecao / time']
-  nome             varchar(90)    [not null]
-  tipo             tipo_categoria [not null]
-  descricao        varchar(255)
-  padrao           boolean        [not null, default: false]
+Table categories [headercolor: #2E7D5B] {
+  id                 uuid          [pk, default: `uuidv7()`]
+  parent_category_id uuid          [note: 'Hierarquia: selecao / time']
+  name               varchar(90)   [not null]
+  type               category_type [not null]
+  description        varchar(255)
+  is_default         boolean       [not null, default: false]
+  created_at         timestamptz   [not null, default: `now()`]
+  updated_at         timestamptz   [not null, default: `now()`]
+  deleted_at         timestamptz
 }
 
-Table raridade [headercolor: #2E7D5B] {
-  id    bigint      [pk, increment]
-  nome  varchar(60) [not null, unique]
-  ordem smallint    [not null]
+Table rarities [headercolor: #2E7D5B] {
+  id         uuid        [pk, default: `uuidv7()`]
+  name       varchar(60) [not null, unique]
+  sort_order smallint    [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table idioma [headercolor: #2E7D5B] {
-  id     bigint      [pk, increment]
-  nome   varchar(60) [not null]
-  codigo varchar(5)  [not null, unique]
+Table languages [headercolor: #2E7D5B] {
+  id         uuid        [pk, default: `uuidv7()`]
+  name       varchar(60) [not null]
+  code       varchar(5)  [not null, unique]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table estado_conservacao [headercolor: #2E7D5B] {
-  id    bigint      [pk, increment]
-  nome  varchar(60) [not null, unique]
-  ordem smallint    [not null]
+Table card_conditions [headercolor: #2E7D5B] {
+  id         uuid        [pk, default: `uuidv7()`]
+  name       varchar(60) [not null, unique]
+  sort_order smallint    [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
   Note: 'Ex.: Mint, Near Mint, Otimo, Bom, Regular.'
 }
 
-Table album [headercolor: #2E7D5B] {
-  id            bigint       [pk, increment]
-  categoria_id  bigint
-  titulo        varchar(160) [not null]
-  editora       varchar(120)
-  ano           smallint
-  descricao     text
-  capa_url      varchar(255)
-  total_cartas  integer      [not null, default: 0]
-  status        status_album [not null, default: 'ATIVO']
-  data_cadastro timestamp    [not null, default: `now()`]
+Table albums [headercolor: #2E7D5B] {
+  id          uuid         [pk, default: `uuidv7()`]
+  category_id uuid
+  title       varchar(160) [not null]
+  publisher   varchar(120)
+  year        smallint
+  description text
+  cover_url   varchar(255)
+  total_cards integer      [not null, default: 0]
+  status      album_status [not null, default: 'ACTIVE']
+  created_at  timestamptz  [not null, default: `now()`]
+  updated_at  timestamptz  [not null, default: `now()`]
+  deleted_at  timestamptz
 }
 
-Table carta [headercolor: #2E7D5B] {
-  id                bigint       [pk, increment]
-  album_id          bigint       [note: 'Nulo = carta avulsa / portfolio']
-  categoria_id      bigint
-  raridade_id       bigint
-  idioma_id         bigint
-  nome              varchar(160) [not null]
-  numero            varchar(20)
-  descricao         text
-  imagem_frente_url varchar(255)
-  imagem_verso_url  varchar(255)
-  data_cadastro     timestamp    [not null, default: `now()`]
+Table cards [headercolor: #2E7D5B] {
+  id              uuid         [pk, default: `uuidv7()`]
+  album_id        uuid         [note: 'Nulo = carta avulsa / portfolio']
+  category_id     uuid
+  rarity_id       uuid
+  language_id     uuid
+  name            varchar(160) [not null]
+  number          varchar(20)
+  description     text
+  front_image_url varchar(255)
+  back_image_url  varchar(255)
+  created_at      timestamptz  [not null, default: `now()`]
+  updated_at      timestamptz  [not null, default: `now()`]
+  deleted_at      timestamptz
   indexes {
-    (album_id, numero) [unique]
+    (album_id, number) [unique]
   }
 }
 
-Table foto_carta [headercolor: #2E7D5B] {
-  id       bigint       [pk, increment]
-  carta_id bigint       [not null]
-  url      varchar(255) [not null]
-  ordem    smallint     [not null, default: 0]
+Table card_photos [headercolor: #2E7D5B] {
+  id         uuid         [pk, default: `uuidv7()`]
+  card_id    uuid         [not null]
+  url        varchar(255) [not null]
+  sort_order smallint     [not null, default: 0]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table historico_preco [headercolor: #2E7D5B] {
-  id              bigint        [pk, increment]
-  carta_id        bigint        [not null]
-  preco           decimal(10,2) [not null]
-  data_referencia date          [not null]
-  origem          origem_preco  [not null]
+Table price_history [headercolor: #2E7D5B] {
+  id             uuid          [pk, default: `uuidv7()`]
+  card_id        uuid          [not null]
+  price          decimal(10,2) [not null]
+  reference_date date          [not null]
+  source         price_source  [not null]
+  created_at     timestamptz   [not null, default: `now()`]
+  updated_at     timestamptz   [not null, default: `now()`]
+  deleted_at     timestamptz
 }
 
 // =====================================================================
 // MODULO 3 - COLECAO DO CLIENTE
 // =====================================================================
-Table colecao [headercolor: #7B4F9D] {
-  id                    bigint       [pk, increment]
-  usuario_id            bigint       [not null, unique]
-  publica               boolean      [not null, default: false]
-  link_compartilhamento varchar(120) [unique]
-  data_criacao          timestamp    [not null, default: `now()`]
+Table collections [headercolor: #7B4F9D] {
+  id         uuid         [pk, default: `uuidv7()`]
+  user_id    uuid         [not null, unique]
+  is_public  boolean      [not null, default: false]
+  share_link varchar(120) [unique]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table album_usuario [headercolor: #7B4F9D] {
-  id                   bigint       [pk, increment]
-  colecao_id           bigint       [not null]
-  album_id             bigint       [not null]
-  favorito             boolean      [not null, default: false]
-  progresso_percentual decimal(5,2) [not null, default: 0]
-  data_inicio          timestamp    [not null, default: `now()`]
+Table user_albums [headercolor: #7B4F9D] {
+  id                  uuid         [pk, default: `uuidv7()`]
+  collection_id       uuid         [not null]
+  album_id            uuid         [not null]
+  is_favorite         boolean      [not null, default: false]
+  progress_percentage decimal(5,2) [not null, default: 0]
+  created_at          timestamptz  [not null, default: `now()`]
+  updated_at          timestamptz  [not null, default: `now()`]
+  deleted_at          timestamptz
   indexes {
-    (colecao_id, album_id) [unique]
+    (collection_id, album_id) [unique]
   }
 }
 
-Table colecao_carta [headercolor: #7B4F9D] {
-  id            bigint               [pk, increment]
-  colecao_id    bigint               [not null]
-  carta_id      bigint               [not null]
-  status        status_carta_colecao [not null]
-  quantidade    integer              [not null, default: 1]
-  valor_mercado decimal(10,2)
-  data_adicao   timestamp            [not null, default: `now()`]
+Table collection_cards [headercolor: #7B4F9D] {
+  id            uuid                   [pk, default: `uuidv7()`]
+  collection_id uuid                   [not null]
+  card_id       uuid                   [not null]
+  status        collection_card_status [not null]
+  quantity      integer                [not null, default: 1]
+  market_value  decimal(10,2)
+  created_at    timestamptz            [not null, default: `now()`]
+  updated_at    timestamptz            [not null, default: `now()`]
+  deleted_at    timestamptz
   indexes {
-    (colecao_id, carta_id) [unique]
+    (collection_id, card_id) [unique]
   }
 }
 
 // =====================================================================
 // MODULO 4 - COMUNIDADE (GRUPOS)
 // =====================================================================
-Table grupo [headercolor: #C2703D] {
-  id              bigint            [pk, increment]
-  criador_id      bigint            [not null]
-  nome            varchar(120)      [not null]
-  descricao       text
-  imagem_capa_url varchar(255)
-  tipo_acesso     tipo_acesso_grupo [not null]
-  status          status_grupo      [not null, default: 'ATIVO']
-  data_criacao    timestamp         [not null, default: `now()`]
+Table groups [headercolor: #C2703D] {
+  id              uuid              [pk, default: `uuidv7()`]
+  creator_id      uuid              [not null]
+  name            varchar(120)      [not null]
+  description     text
+  cover_image_url varchar(255)
+  access_type     group_access_type [not null]
+  status          group_status      [not null, default: 'ACTIVE']
+  created_at      timestamptz       [not null, default: `now()`]
+  updated_at      timestamptz       [not null, default: `now()`]
+  deleted_at      timestamptz
 }
 
-Table membro_grupo [headercolor: #C2703D] {
-  id             bigint       [pk, increment]
-  grupo_id       bigint       [not null]
-  usuario_id     bigint       [not null]
-  papel          papel_membro [not null, default: 'MEMBRO']
-  data_entrada   timestamp    [not null, default: `now()`]
-  silenciado_ate timestamp    [note: 'Silenciar notificacoes do grupo']
+Table group_members [headercolor: #C2703D] {
+  id          uuid        [pk, default: `uuidv7()`]
+  group_id    uuid        [not null]
+  user_id     uuid        [not null]
+  role        member_role [not null, default: 'MEMBER']
+  muted_until timestamptz [note: 'Silenciar notificacoes do grupo']
+  created_at  timestamptz [not null, default: `now()`]
+  updated_at  timestamptz [not null, default: `now()`]
+  deleted_at  timestamptz
   indexes {
-    (grupo_id, usuario_id) [unique]
+    (group_id, user_id) [unique]
   }
 }
 
-Table solicitacao_grupo [headercolor: #C2703D] {
-  id               bigint             [pk, increment]
-  grupo_id         bigint             [not null]
-  usuario_id       bigint             [not null]
-  avaliado_por_id  bigint
-  status           status_solicitacao [not null, default: 'PENDENTE']
-  data_solicitacao timestamp          [not null, default: `now()`]
-  data_avaliacao   timestamp
+Table group_join_requests [headercolor: #C2703D] {
+  id             uuid           [pk, default: `uuidv7()`]
+  group_id       uuid           [not null]
+  user_id        uuid           [not null]
+  reviewed_by_id uuid
+  status         request_status [not null, default: 'PENDING']
+  reviewed_at    timestamptz
+  created_at     timestamptz    [not null, default: `now()`]
+  updated_at     timestamptz    [not null, default: `now()`]
+  deleted_at     timestamptz
 }
 
-Table mensagem_grupo [headercolor: #C2703D] {
-  id                     bigint            [pk, increment]
-  grupo_id               bigint            [not null]
-  autor_id               bigint            [not null]
-  mensagem_respondida_id bigint
-  carta_id               bigint
-  anuncio_id             bigint
-  tipo_conteudo          tipo_conteudo_msg [not null, default: 'TEXTO']
-  conteudo               text
-  anexo_url              varchar(255)
-  fixada                 boolean           [not null, default: false]
-  data_envio             timestamp         [not null, default: `now()`]
+Table group_messages [headercolor: #C2703D] {
+  id             uuid                 [pk, default: `uuidv7()`]
+  group_id       uuid                 [not null]
+  author_id      uuid                 [not null]
+  reply_to_id    uuid
+  card_id        uuid
+  listing_id     uuid
+  content_type   message_content_type [not null, default: 'TEXT']
+  content        text
+  attachment_url varchar(255)
+  pinned         boolean              [not null, default: false]
+  created_at     timestamptz          [not null, default: `now()`]
+  updated_at     timestamptz          [not null, default: `now()`]
+  deleted_at     timestamptz
 }
 
-Table enquete [headercolor: #C2703D] {
-  id                bigint       [pk, increment]
-  mensagem_grupo_id bigint       [not null, unique]
-  pergunta          varchar(255) [not null]
-  multipla_escolha  boolean      [not null, default: false]
-  encerra_em        timestamp
+Table polls [headercolor: #C2703D] {
+  id               uuid         [pk, default: `uuidv7()`]
+  group_message_id uuid         [not null, unique]
+  question         varchar(255) [not null]
+  multiple_choice  boolean      [not null, default: false]
+  closes_at        timestamptz
+  created_at       timestamptz  [not null, default: `now()`]
+  updated_at       timestamptz  [not null, default: `now()`]
+  deleted_at       timestamptz
 }
 
-Table opcao_enquete [headercolor: #C2703D] {
-  id         bigint       [pk, increment]
-  enquete_id bigint       [not null]
-  texto      varchar(160) [not null]
+Table poll_options [headercolor: #C2703D] {
+  id         uuid         [pk, default: `uuidv7()`]
+  poll_id    uuid         [not null]
+  text       varchar(160) [not null]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table voto_enquete [headercolor: #C2703D] {
-  opcao_enquete_id bigint    [not null]
-  usuario_id       bigint    [not null]
-  data_voto        timestamp [not null, default: `now()`]
+Table poll_votes [headercolor: #C2703D] {
+  poll_option_id uuid        [not null]
+  user_id        uuid        [not null]
+  created_at     timestamptz [not null, default: `now()`]
+  updated_at     timestamptz [not null, default: `now()`]
+  deleted_at     timestamptz
   indexes {
-    (opcao_enquete_id, usuario_id) [pk]
+    (poll_option_id, user_id) [pk]
   }
 }
 
 // =====================================================================
 // MODULO 5 - CHAT PESSOAL
 // =====================================================================
-Table conversa [headercolor: #2A7B8C] {
-  id           bigint    [pk, increment]
-  anuncio_id   bigint    [note: 'Preenchido quando a conversa nasce de um anuncio']
-  data_criacao timestamp [not null, default: `now()`]
+Table conversations [headercolor: #2A7B8C] {
+  id         uuid        [pk, default: `uuidv7()`]
+  listing_id uuid        [note: 'Preenchido quando a conversa nasce de um anuncio']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table participante_conversa [headercolor: #2A7B8C] {
-  conversa_id  bigint    [not null]
-  usuario_id   bigint    [not null]
-  data_entrada timestamp [not null, default: `now()`]
+Table conversation_participants [headercolor: #2A7B8C] {
+  conversation_id uuid        [not null]
+  user_id         uuid        [not null]
+  created_at      timestamptz [not null, default: `now()`]
+  updated_at      timestamptz [not null, default: `now()`]
+  deleted_at      timestamptz
   indexes {
-    (conversa_id, usuario_id) [pk]
+    (conversation_id, user_id) [pk]
   }
 }
 
-Table mensagem [headercolor: #2A7B8C] {
-  id                     bigint       [pk, increment]
-  conversa_id            bigint       [not null]
-  autor_id               bigint       [not null]
-  mensagem_respondida_id bigint
-  conteudo               text
-  anexo_url              varchar(255)
-  lida                   boolean      [not null, default: false]
-  data_leitura           timestamp
-  data_envio             timestamp    [not null, default: `now()`]
+Table messages [headercolor: #2A7B8C] {
+  id              uuid         [pk, default: `uuidv7()`]
+  conversation_id uuid         [not null]
+  author_id       uuid         [not null]
+  reply_to_id     uuid
+  content         text
+  attachment_url  varchar(255)
+  is_read         boolean      [not null, default: false]
+  read_at         timestamptz
+  created_at      timestamptz  [not null, default: `now()`]
+  updated_at      timestamptz  [not null, default: `now()`]
+  deleted_at      timestamptz
 }
 
-Table bloqueio_usuario [headercolor: #2A7B8C] {
-  id            bigint    [pk, increment]
-  bloqueador_id bigint    [not null]
-  bloqueado_id  bigint    [not null]
-  data_bloqueio timestamp [not null, default: `now()`]
+Table user_blocks [headercolor: #2A7B8C] {
+  id         uuid        [pk, default: `uuidv7()`]
+  blocker_id uuid        [not null]
+  blocked_id uuid        [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
   indexes {
-    (bloqueador_id, bloqueado_id) [unique]
+    (blocker_id, blocked_id) [unique]
   }
 }
 
 // =====================================================================
 // MODULO 6 - MARKETPLACE (ANUNCIOS, PEDIDOS, AVALIACOES)
 // =====================================================================
-Table anuncio [headercolor: #A63D5F] {
-  id                    bigint         [pk, increment]
-  vendedor_id           bigint         [not null]
-  carta_id              bigint         [not null]
-  estado_conservacao_id bigint
-  preco                 decimal(10,2)  [not null]
-  quantidade_disponivel integer        [not null, default: 1]
-  descricao             text
-  status                status_anuncio [not null, default: 'ATIVO']
-  data_criacao          timestamp      [not null, default: `now()`]
-  data_atualizacao      timestamp      [not null, default: `now()`]
+Table listings [headercolor: #A63D5F] {
+  id                 uuid           [pk, default: `uuidv7()`]
+  seller_id          uuid           [not null]
+  card_id            uuid           [not null]
+  condition_id       uuid
+  price              decimal(10,2)  [not null]
+  available_quantity integer        [not null, default: 1]
+  description        text
+  status             listing_status [not null, default: 'ACTIVE']
+  created_at         timestamptz    [not null, default: `now()`]
+  updated_at         timestamptz    [not null, default: `now()`]
+  deleted_at         timestamptz
 }
 
-Table foto_anuncio [headercolor: #A63D5F] {
-  id         bigint       [pk, increment]
-  anuncio_id bigint       [not null]
+Table listing_photos [headercolor: #A63D5F] {
+  id         uuid         [pk, default: `uuidv7()`]
+  listing_id uuid         [not null]
   url        varchar(255) [not null]
-  ordem      smallint     [not null, default: 0]
+  sort_order smallint     [not null, default: 0]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
-Table proposta [headercolor: #A63D5F] {
-  id             bigint          [pk, increment]
-  anuncio_id     bigint          [not null]
-  comprador_id   bigint          [not null]
-  valor_ofertado decimal(10,2)   [not null]
-  mensagem       varchar(255)
-  status         status_proposta [not null, default: 'PENDENTE']
-  data_criacao   timestamp       [not null, default: `now()`]
+Table offers [headercolor: #A63D5F] {
+  id             uuid          [pk, default: `uuidv7()`]
+  listing_id     uuid          [not null]
+  buyer_id       uuid          [not null]
+  offered_amount decimal(10,2) [not null]
+  message        varchar(255)
+  status         offer_status  [not null, default: 'PENDING']
+  created_at     timestamptz   [not null, default: `now()`]
+  updated_at     timestamptz   [not null, default: `now()`]
+  deleted_at     timestamptz
 }
 
-Table pedido [headercolor: #A63D5F] {
-  id                  bigint        [pk, increment]
-  anuncio_id          bigint        [not null]
-  comprador_id        bigint        [not null]
-  vendedor_id         bigint        [not null]
-  endereco_entrega_id bigint        [not null]
-  quantidade          integer       [not null, default: 1]
-  valor_itens         decimal(10,2) [not null]
-  valor_frete         decimal(10,2) [not null, default: 0]
-  valor_total         decimal(10,2) [not null]
-  forma_envio         varchar(60)   [not null]
-  status              status_pedido [not null, default: 'AGUARDANDO_PAGAMENTO']
-  data_pedido         timestamp     [not null, default: `now()`]
+Table orders [headercolor: #A63D5F] {
+  id                  uuid          [pk, default: `uuidv7()`]
+  listing_id          uuid          [not null]
+  buyer_id            uuid          [not null]
+  seller_id           uuid          [not null]
+  shipping_address_id uuid          [not null]
+  quantity            integer       [not null, default: 1]
+  items_amount        decimal(10,2) [not null]
+  shipping_amount     decimal(10,2) [not null, default: 0]
+  total_amount        decimal(10,2) [not null]
+  shipping_method     varchar(60)   [not null]
+  status              order_status  [not null, default: 'AWAITING_PAYMENT']
+  created_at          timestamptz   [not null, default: `now()`]
+  updated_at          timestamptz   [not null, default: `now()`]
+  deleted_at          timestamptz
 }
 
-Table pagamento [headercolor: #A63D5F] {
-  id                 bigint           [pk, increment]
-  pedido_id          bigint           [not null, unique]
-  metodo             metodo_pagamento [not null]
-  valor              decimal(10,2)    [not null]
-  status             status_pagamento [not null, default: 'PENDENTE']
-  gateway_referencia varchar(120)
-  data_atualizacao   timestamp        [not null, default: `now()`]
+Table payments [headercolor: #A63D5F] {
+  id                uuid           [pk, default: `uuidv7()`]
+  order_id          uuid           [not null, unique]
+  method            payment_method [not null]
+  value             decimal(10,2)  [not null]
+  status            payment_status [not null, default: 'PENDING']
+  gateway_reference varchar(120)
+  created_at        timestamptz    [not null, default: `now()`]
+  updated_at        timestamptz    [not null, default: `now()`]
+  deleted_at        timestamptz
 }
 
-Table avaliacao [headercolor: #A63D5F] {
-  id           bigint       [pk, increment]
-  pedido_id    bigint       [not null, unique]
-  autor_id     bigint       [not null, note: 'Comprador que avalia']
-  vendedor_id  bigint       [not null, note: 'Vendedor avaliado']
-  nota         smallint     [not null, note: '1 a 5']
-  comentario   varchar(500)
-  data_criacao timestamp    [not null, default: `now()`]
+Table reviews [headercolor: #A63D5F] {
+  id         uuid         [pk, default: `uuidv7()`]
+  order_id   uuid         [not null, unique]
+  author_id  uuid         [not null, note: 'Comprador que avalia']
+  seller_id  uuid         [not null, note: 'Vendedor avaliado']
+  rating     smallint     [not null, note: '1 a 5']
+  comment    varchar(500)
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+  deleted_at timestamptz
 }
 
 // =====================================================================
 // MODULO 7 - NOTIFICACOES E FAVORITOS
 // =====================================================================
-Table favorito [headercolor: #B08A2E] {
-  id           bigint        [pk, increment]
-  usuario_id   bigint        [not null]
-  tipo         tipo_favorito [not null]
-  album_id     bigint
-  carta_id     bigint
-  grupo_id     bigint
-  data_criacao timestamp     [not null, default: `now()`]
-  Note: 'Exatamente um dos alvos (album_id / carta_id / grupo_id) e preenchido, conforme o campo tipo.'
+Table favorites [headercolor: #B08A2E] {
+  id         uuid          [pk, default: `uuidv7()`]
+  user_id    uuid          [not null]
+  type       favorite_type [not null]
+  album_id   uuid
+  card_id    uuid
+  group_id   uuid
+  created_at timestamptz   [not null, default: `now()`]
+  updated_at timestamptz   [not null, default: `now()`]
+  deleted_at timestamptz
+  Note: 'Exatamente um dos alvos (album_id / card_id / group_id) e preenchido, conforme o campo tipo.'
 }
 
-Table alerta_preco [headercolor: #B08A2E] {
-  id           bigint        [pk, increment]
-  usuario_id   bigint        [not null]
-  carta_id     bigint        [not null]
-  preco_alvo   decimal(10,2) [not null]
-  ativo        boolean       [not null, default: true]
-  data_criacao timestamp     [not null, default: `now()`]
+Table price_alerts [headercolor: #B08A2E] {
+  id           uuid          [pk, default: `uuidv7()`]
+  user_id      uuid          [not null]
+  card_id      uuid          [not null]
+  target_price decimal(10,2) [not null]
+  active       boolean       [not null, default: true]
+  created_at   timestamptz   [not null, default: `now()`]
+  updated_at   timestamptz   [not null, default: `now()`]
+  deleted_at   timestamptz
   Note: 'Alertas de preco (funcionalidade futura).'
 }
 
-Table notificacao_global [headercolor: #B08A2E] {
-  id                  bigint       [pk, increment]
-  admin_id            bigint       [not null]
-  titulo              varchar(120) [not null]
-  conteudo            varchar(500) [not null]
-  total_destinatarios integer      [not null, default: 0]
-  data_disparo        timestamp    [not null, default: `now()`]
+Table global_notifications [headercolor: #B08A2E] {
+  id              uuid         [pk, default: `uuidv7()`]
+  admin_id        uuid         [not null]
+  title           varchar(120) [not null]
+  content         varchar(500) [not null]
+  recipient_count integer      [not null, default: 0]
+  created_at      timestamptz  [not null, default: `now()`]
+  updated_at      timestamptz  [not null, default: `now()`]
+  deleted_at      timestamptz
 }
 
-Table notificacao [headercolor: #B08A2E] {
-  id                    bigint       [pk, increment]
-  usuario_id            bigint       [not null]
-  notificacao_global_id bigint
-  titulo                varchar(120) [not null]
-  mensagem              varchar(500) [not null]
-  tipo                  varchar(40)  [not null]
-  link_referencia       varchar(255)
-  lida                  boolean      [not null, default: false]
-  data_criacao          timestamp    [not null, default: `now()`]
+Table notifications [headercolor: #B08A2E] {
+  id                     uuid         [pk, default: `uuidv7()`]
+  user_id                uuid         [not null]
+  global_notification_id uuid
+  title                  varchar(120) [not null]
+  message                varchar(500) [not null]
+  type                   varchar(40)  [not null]
+  reference_link         varchar(255)
+  is_read                boolean      [not null, default: false]
+  created_at             timestamptz  [not null, default: `now()`]
+  updated_at             timestamptz  [not null, default: `now()`]
+  deleted_at             timestamptz
 }
 
 // =====================================================================
 // MODULO 8 - MODERACAO E ADMINISTRACAO
 // =====================================================================
-Table denuncia [headercolor: #5A5A66] {
-  id                bigint             [pk, increment]
-  denunciante_id    bigint             [not null]
-  moderador_id      bigint
-  anuncio_id        bigint
-  usuario_alvo_id   bigint
-  mensagem_grupo_id bigint
-  tipo_alvo         tipo_alvo_denuncia [not null]
-  motivo            varchar(90)        [not null]
-  descricao         varchar(500)
-  status            status_denuncia    [not null, default: 'PENDENTE']
-  data_criacao      timestamp          [not null, default: `now()`]
-  data_resolucao    timestamp
-  Note: 'Alvo polimorfico: anuncio, usuario/vendedor/perfil ou mensagem de grupo, conforme tipo_alvo.'
+Table reports [headercolor: #5A5A66] {
+  id               uuid               [pk, default: `uuidv7()`]
+  reporter_id      uuid               [not null]
+  moderator_id     uuid
+  listing_id       uuid
+  target_user_id   uuid
+  group_message_id uuid
+  target_type      report_target_type [not null]
+  reason           varchar(90)        [not null]
+  description      varchar(500)
+  status           report_status      [not null, default: 'PENDING']
+  resolved_at      timestamptz
+  created_at       timestamptz        [not null, default: `now()`]
+  updated_at       timestamptz        [not null, default: `now()`]
+  deleted_at       timestamptz
+  Note: 'Alvo polimorfico: anuncio, usuario/vendedor/perfil ou mensagem de grupo, conforme target_type.'
 }
 
-Table solicitacao_cadastro [headercolor: #5A5A66] {
-  id              bigint              [pk, increment]
-  solicitante_id  bigint              [not null]
-  avaliado_por_id bigint
-  carta_id        bigint              [note: 'Item criado apos aprovacao']
-  album_id        bigint              [note: 'Item criado apos aprovacao']
-  tipo            tipo_solic_cadastro [not null]
-  dados           jsonb               [not null, note: 'Payload com os dados sugeridos pelo usuario']
-  status          status_solicitacao  [not null, default: 'PENDENTE']
-  data_criacao    timestamp           [not null, default: `now()`]
-  data_avaliacao  timestamp
+Table catalog_requests [headercolor: #5A5A66] {
+  id             uuid                 [pk, default: `uuidv7()`]
+  requester_id   uuid                 [not null]
+  reviewed_by_id uuid
+  card_id        uuid                 [note: 'Item criado apos aprovacao']
+  album_id       uuid                 [note: 'Item criado apos aprovacao']
+  type           catalog_request_type [not null]
+  data           jsonb                [not null, note: 'Payload com os dados sugeridos pelo usuario']
+  status         request_status       [not null, default: 'PENDING']
+  reviewed_at    timestamptz
+  created_at     timestamptz          [not null, default: `now()`]
+  updated_at     timestamptz          [not null, default: `now()`]
+  deleted_at     timestamptz
 }
 
-Table log_auditoria [headercolor: #5A5A66] {
-  id               bigint      [pk, increment]
-  admin_id         bigint      [not null]
-  acao             varchar(90) [not null]
-  entidade_afetada varchar(60) [not null]
-  entidade_id      bigint
-  detalhes         jsonb
-  data_registro    timestamp   [not null, default: `now()`]
+Table audit_logs [headercolor: #5A5A66] {
+  id          uuid        [pk, default: `uuidv7()`]
+  admin_id    uuid        [not null]
+  action      varchar(90) [not null]
+  entity_type varchar(60) [not null]
+  entity_id   uuid
+  details     jsonb
+  created_at  timestamptz [not null, default: `now()`]
+  updated_at  timestamptz [not null, default: `now()`]
+  deleted_at  timestamptz
 }
 
-Table configuracao_global [headercolor: #5A5A66] {
-  id                bigint       [pk, increment]
-  atualizado_por_id bigint
-  chave             varchar(90)  [not null, unique]
-  valor             text         [not null]
-  descricao         varchar(255)
-  data_atualizacao  timestamp    [not null, default: `now()`]
+Table global_settings [headercolor: #5A5A66] {
+  id            uuid         [pk, default: `uuidv7()`]
+  updated_by_id uuid
+  key           varchar(90)  [not null, unique]
+  value         text         [not null]
+  description   varchar(255)
+  created_at    timestamptz  [not null, default: `now()`]
+  updated_at    timestamptz  [not null, default: `now()`]
+  deleted_at    timestamptz
 }
 
 // =====================================================================
@@ -625,163 +733,165 @@ Table configuracao_global [headercolor: #5A5A66] {
 // =====================================================================
 
 // --- 1. Usuarios, Perfil e Acesso ------------------------------------
-Ref: perfil.usuario_id                  - usuario.id
-Ref: endereco.usuario_id                > usuario.id
-Ref: token_recuperacao_senha.usuario_id > usuario.id
-Ref: usuario_conquista.usuario_id       > usuario.id
-Ref: usuario_conquista.conquista_id     > conquista.id
-Ref: assinatura.usuario_id              > usuario.id
+Ref: profiles.user_id                  - users.id
+Ref: addresses.user_id                > users.id
+Ref: password_reset_tokens.user_id > users.id
+Ref: refresh_tokens.user_id > users.id
+Ref: user_achievements.user_id       > users.id
+Ref: user_achievements.achievement_id     > achievements.id
+Ref: subscriptions.user_id              > users.id
 
 // --- 2. Catalogo Global ----------------------------------------------
-Ref: categoria.categoria_pai_id > categoria.id
-Ref: album.categoria_id         > categoria.id
-Ref: carta.album_id             > album.id
-Ref: carta.categoria_id         > categoria.id
-Ref: carta.raridade_id          > raridade.id
-Ref: carta.idioma_id            > idioma.id
-Ref: foto_carta.carta_id        > carta.id
-Ref: historico_preco.carta_id   > carta.id
+Ref: categories.parent_category_id > categories.id
+Ref: albums.category_id         > categories.id
+Ref: cards.album_id             > albums.id
+Ref: cards.category_id         > categories.id
+Ref: cards.rarity_id          > rarities.id
+Ref: cards.language_id            > languages.id
+Ref: card_photos.card_id        > cards.id
+Ref: price_history.card_id   > cards.id
 
 // --- 3. Colecao do Cliente -------------------------------------------
-Ref: colecao.usuario_id       - usuario.id
-Ref: album_usuario.colecao_id > colecao.id
-Ref: album_usuario.album_id   > album.id
-Ref: colecao_carta.colecao_id > colecao.id
-Ref: colecao_carta.carta_id   > carta.id
+Ref: collections.user_id       - users.id
+Ref: user_albums.collection_id > collections.id
+Ref: user_albums.album_id   > albums.id
+Ref: collection_cards.collection_id > collections.id
+Ref: collection_cards.card_id   > cards.id
 
 // --- 4. Comunidade (Grupos) ------------------------------------------
-Ref: grupo.criador_id                      > usuario.id
-Ref: membro_grupo.grupo_id                 > grupo.id
-Ref: membro_grupo.usuario_id               > usuario.id
-Ref: solicitacao_grupo.grupo_id            > grupo.id
-Ref: solicitacao_grupo.usuario_id          > usuario.id
-Ref: solicitacao_grupo.avaliado_por_id     > usuario.id
-Ref: mensagem_grupo.grupo_id               > grupo.id
-Ref: mensagem_grupo.autor_id               > usuario.id
-Ref: mensagem_grupo.mensagem_respondida_id > mensagem_grupo.id
-Ref: mensagem_grupo.carta_id               > carta.id
-Ref: mensagem_grupo.anuncio_id             > anuncio.id
-Ref: enquete.mensagem_grupo_id             - mensagem_grupo.id
-Ref: opcao_enquete.enquete_id              > enquete.id
-Ref: voto_enquete.opcao_enquete_id         > opcao_enquete.id
-Ref: voto_enquete.usuario_id               > usuario.id
+Ref: groups.creator_id                      > users.id
+Ref: group_members.group_id                 > groups.id
+Ref: group_members.user_id               > users.id
+Ref: group_join_requests.group_id            > groups.id
+Ref: group_join_requests.user_id          > users.id
+Ref: group_join_requests.reviewed_by_id     > users.id
+Ref: group_messages.group_id               > groups.id
+Ref: group_messages.author_id               > users.id
+Ref: group_messages.reply_to_id > group_messages.id
+Ref: group_messages.card_id               > cards.id
+Ref: group_messages.listing_id             > listings.id
+Ref: polls.group_message_id             - group_messages.id
+Ref: poll_options.poll_id              > polls.id
+Ref: poll_votes.poll_option_id         > poll_options.id
+Ref: poll_votes.user_id               > users.id
 
 // --- 5. Chat Pessoal --------------------------------------------------
-Ref: participante_conversa.conversa_id > conversa.id
-Ref: participante_conversa.usuario_id  > usuario.id
-Ref: mensagem.conversa_id              > conversa.id
-Ref: mensagem.autor_id                 > usuario.id
-Ref: mensagem.mensagem_respondida_id   > mensagem.id
-Ref: conversa.anuncio_id               > anuncio.id
-Ref: bloqueio_usuario.bloqueador_id    > usuario.id
-Ref: bloqueio_usuario.bloqueado_id     > usuario.id
+Ref: conversation_participants.conversation_id > conversations.id
+Ref: conversation_participants.user_id  > users.id
+Ref: messages.conversation_id              > conversations.id
+Ref: messages.author_id                 > users.id
+Ref: messages.reply_to_id   > messages.id
+Ref: conversations.listing_id               > listings.id
+Ref: user_blocks.blocker_id    > users.id
+Ref: user_blocks.blocked_id     > users.id
 
 // --- 6. Marketplace ---------------------------------------------------
-Ref: anuncio.vendedor_id           > usuario.id
-Ref: anuncio.carta_id              > carta.id
-Ref: anuncio.estado_conservacao_id > estado_conservacao.id
-Ref: foto_anuncio.anuncio_id       > anuncio.id
-Ref: proposta.anuncio_id           > anuncio.id
-Ref: proposta.comprador_id         > usuario.id
-Ref: pedido.anuncio_id             > anuncio.id
-Ref: pedido.comprador_id           > usuario.id
-Ref: pedido.vendedor_id            > usuario.id
-Ref: pedido.endereco_entrega_id    > endereco.id
-Ref: pagamento.pedido_id           - pedido.id
-Ref: avaliacao.pedido_id           - pedido.id
-Ref: avaliacao.autor_id            > usuario.id
-Ref: avaliacao.vendedor_id         > usuario.id
+Ref: listings.seller_id           > users.id
+Ref: listings.card_id              > cards.id
+Ref: listings.condition_id > card_conditions.id
+Ref: listing_photos.listing_id       > listings.id
+Ref: offers.listing_id           > listings.id
+Ref: offers.buyer_id         > users.id
+Ref: orders.listing_id             > listings.id
+Ref: orders.buyer_id           > users.id
+Ref: orders.seller_id            > users.id
+Ref: orders.shipping_address_id    > addresses.id
+Ref: payments.order_id           - orders.id
+Ref: reviews.order_id           - orders.id
+Ref: reviews.author_id            > users.id
+Ref: reviews.seller_id         > users.id
 
 // --- 7. Notificacoes e Favoritos --------------------------------------
-Ref: favorito.usuario_id               > usuario.id
-Ref: favorito.album_id                 > album.id
-Ref: favorito.carta_id                 > carta.id
-Ref: favorito.grupo_id                 > grupo.id
-Ref: alerta_preco.usuario_id           > usuario.id
-Ref: alerta_preco.carta_id             > carta.id
-Ref: notificacao.usuario_id            > usuario.id
-Ref: notificacao.notificacao_global_id > notificacao_global.id
-Ref: notificacao_global.admin_id       > usuario.id
+Ref: favorites.user_id               > users.id
+Ref: favorites.album_id                 > albums.id
+Ref: favorites.card_id                 > cards.id
+Ref: favorites.group_id                 > groups.id
+Ref: price_alerts.user_id           > users.id
+Ref: price_alerts.card_id             > cards.id
+Ref: notifications.user_id            > users.id
+Ref: notifications.global_notification_id > global_notifications.id
+Ref: global_notifications.admin_id       > users.id
 
 // --- 8. Moderacao e Administracao -------------------------------------
-Ref: denuncia.denunciante_id               > usuario.id
-Ref: denuncia.moderador_id                 > usuario.id
-Ref: denuncia.anuncio_id                   > anuncio.id
-Ref: denuncia.usuario_alvo_id              > usuario.id
-Ref: denuncia.mensagem_grupo_id            > mensagem_grupo.id
-Ref: solicitacao_cadastro.solicitante_id   > usuario.id
-Ref: solicitacao_cadastro.avaliado_por_id  > usuario.id
-Ref: solicitacao_cadastro.carta_id         > carta.id
-Ref: solicitacao_cadastro.album_id         > album.id
-Ref: log_auditoria.admin_id                > usuario.id
-Ref: configuracao_global.atualizado_por_id > usuario.id
+Ref: reports.reporter_id               > users.id
+Ref: reports.moderator_id                 > users.id
+Ref: reports.listing_id                   > listings.id
+Ref: reports.target_user_id              > users.id
+Ref: reports.group_message_id            > group_messages.id
+Ref: catalog_requests.requester_id   > users.id
+Ref: catalog_requests.reviewed_by_id  > users.id
+Ref: catalog_requests.card_id         > cards.id
+Ref: catalog_requests.album_id         > albums.id
+Ref: audit_logs.admin_id                > users.id
+Ref: global_settings.updated_by_id > users.id
 
 // =====================================================================
 // AGRUPAMENTOS VISUAIS
 // =====================================================================
 TableGroup "1 - Usuarios, Perfil e Acesso" {
-  usuario
-  perfil
-  endereco
-  token_recuperacao_senha
-  conquista
-  usuario_conquista
-  assinatura
+  users
+  profiles
+  addresses
+  password_reset_tokens
+  refresh_tokens
+  achievements
+  user_achievements
+  subscriptions
 }
 
 TableGroup "2 - Catalogo Global" {
-  categoria
-  raridade
-  idioma
-  estado_conservacao
-  album
-  carta
-  foto_carta
-  historico_preco
+  categories
+  rarities
+  languages
+  card_conditions
+  albums
+  cards
+  card_photos
+  price_history
 }
 
 TableGroup "3 - Colecao do Cliente" {
-  colecao
-  album_usuario
-  colecao_carta
+  collections
+  user_albums
+  collection_cards
 }
 
 TableGroup "4 - Comunidade (Grupos)" {
-  grupo
-  membro_grupo
-  solicitacao_grupo
-  mensagem_grupo
-  enquete
-  opcao_enquete
-  voto_enquete
+  groups
+  group_members
+  group_join_requests
+  group_messages
+  polls
+  poll_options
+  poll_votes
 }
 
 TableGroup "5 - Chat Pessoal" {
-  conversa
-  participante_conversa
-  mensagem
-  bloqueio_usuario
+  conversations
+  conversation_participants
+  message
+  user_blocks
 }
 
 TableGroup "6 - Marketplace" {
-  anuncio
-  foto_anuncio
-  proposta
-  pedido
-  pagamento
-  avaliacao
+  listings
+  listing_photos
+  offers
+  orders
+  payments
+  reviews
 }
 
 TableGroup "7 - Notificacoes e Favoritos" {
-  favorito
-  alerta_preco
-  notificacao
-  notificacao_global
+  favorites
+  price_alerts
+  notifications
+  global_notifications
 }
 
 TableGroup "8 - Moderacao e Administracao" {
-  denuncia
-  solicitacao_cadastro
-  log_auditoria
-  configuracao_global
+  reports
+  catalog_requests
+  audit_logs
+  global_settings
 }

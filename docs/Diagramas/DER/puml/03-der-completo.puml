@@ -51,7 +51,7 @@ hide empty methods
 
 left to right direction
 
-title CromoCard — DER Completo (43 entidades / 8 modulos)
+title CromoCard — DER Completo (44 entidades / 8 modulos)
 
 legend bottom
   |= Marcacao |= Significado |
@@ -68,87 +68,119 @@ endlegend
 ' =====================================================================
 package "1. Usuarios, Perfil e Acesso" as M1 #E8EEF9 {
 
-  entity usuario {
-    * id : bigserial <<PK>>
+  entity users {
+    * id : uuid <<PK>>
     -- Atributos --
-    * nome : varchar(120)
+    * name : varchar(120)
     * email : varchar(160) <<UQ>>
-    o senha_hash : varchar(255)
-    * tipo_usuario : enum (CLIENTE, VENDEDOR, ADMINISTRADOR)
-    * status : enum (ATIVO, SUSPENSO, EXCLUIDO)
-    * email_confirmado : boolean
-    * aceite_termos : boolean
+    o password_hash : varchar(255)
+    * role : enum (CUSTOMER, SELLER, ADMIN)
+    * status : enum (ACTIVE, SUSPENDED)
+    * email_verified : boolean
+    * terms_accepted : boolean
     o oauth_provider : varchar(30)
     o oauth_id : varchar(120)
-    * data_cadastro : timestamp
-    o data_exclusao : timestamp
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity perfil {
-    * id : bigserial <<PK>>
+  entity profiles {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * usuario_id : bigint <<FK>> <<UQ>>
+    * user_id : uuid <<FK>> <<UQ>>
     -- Atributos --
     o bio : text
     o avatar_url : varchar(255)
-    o cidade : varchar(120)
-    * privacidade_portfolio : enum (PUBLICO, PRIVADO)
+    o city : varchar(120)
+    * portfolio_privacy : enum (PUBLIC, PRIVATE)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity endereco {
-    * id : bigserial <<PK>>
+  entity addresses {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * usuario_id : bigint <<FK>>
+    * user_id : uuid <<FK>>
     -- Atributos --
-    * rotulo : varchar(60)
-    * cep : varchar(9)
-    * logradouro : varchar(160)
-    * numero : varchar(15)
-    o complemento : varchar(60)
-    * bairro : varchar(90)
-    * cidade : varchar(90)
-    * estado : char(2)
-    * principal : boolean
+    * label : varchar(60)
+    * zip_code : varchar(9)
+    * street : varchar(160)
+    * number : varchar(15)
+    o complement : varchar(60)
+    * neighborhood : varchar(90)
+    * city : varchar(90)
+    * state : char(2)
+    * is_primary : boolean
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity token_recuperacao_senha {
-    * id : bigserial <<PK>>
+  entity password_reset_tokens {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * usuario_id : bigint <<FK>>
+    * user_id : uuid <<FK>>
     -- Atributos --
     * token : varchar(255) <<UQ>>
-    * expira_em : timestamp
-    * usado : boolean
-    * data_criacao : timestamp
+    * expires_at : timestamptz
+    * used : boolean
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity conquista {
-    * id : bigserial <<PK>>
-    -- Atributos --
-    * nome : varchar(90) <<UQ>>
-    * descricao : varchar(255)
-    o icone_url : varchar(255)
-    * criterio : varchar(255)
-  }
-
-  entity usuario_conquista {
-    * usuario_id : bigint <<PK>> <<FK>>
-    * conquista_id : bigint <<PK>> <<FK>>
-    -- Atributos --
-    * data_obtencao : timestamp
-  }
-
-  entity assinatura {
-    * id : bigserial <<PK>>
+  entity refresh_tokens {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * usuario_id : bigint <<FK>>
+    * user_id : uuid <<FK>>
     -- Atributos --
-    * plano : varchar(20)
-    * status : enum (ATIVA, CANCELADA, EXPIRADA)
-    * metodo_pagamento : enum
-    * data_inicio : date
-    o data_fim : date
-    o gateway_referencia : varchar(120)
+    * token_hash : varchar(255) <<UQ>>
+    * expires_at : timestamptz
+    o revoked_at : timestamptz
+    o user_agent : varchar(255)
+    o ip_address : varchar(45)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
+  }
+
+  entity achievements {
+    * id : uuid <<PK>>
+    -- Atributos --
+    * name : varchar(90) <<UQ>>
+    * description : varchar(255)
+    o icon_url : varchar(255)
+    * criteria : varchar(255)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
+  }
+
+  entity user_achievements {
+    * user_id : uuid <<PK>> <<FK>>
+    * achievement_id : uuid <<PK>> <<FK>>
+    -- Atributos --
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
+  }
+
+  entity subscriptions {
+    * id : uuid <<PK>>
+    -- Chave estrangeira --
+    * user_id : uuid <<FK>>
+    -- Atributos --
+    * plan : varchar(20)
+    * status : enum (ACTIVE, CANCELED, EXPIRED)
+    * payment_method : enum
+    * start_date : date
+    o end_date : date
+    o gateway_reference : varchar(120)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -157,87 +189,109 @@ package "1. Usuarios, Perfil e Acesso" as M1 #E8EEF9 {
 ' =====================================================================
 package "2. Catalogo Global (Albuns e Cartas)" as M2 #E6F3EC {
 
-  entity categoria {
-    * id : bigserial <<PK>>
+  entity categories {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    o categoria_pai_id : bigint <<FK>>
+    o parent_category_id : uuid <<FK>>
     -- Atributos --
-    * nome : varchar(90)
-    * tipo : enum (ALBUM, CARTA)
-    o descricao : varchar(255)
-    * padrao : boolean
+    * name : varchar(90)
+    * type : enum (ALBUM, CARD)
+    o description : varchar(255)
+    * is_default : boolean
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity raridade {
-    * id : bigserial <<PK>>
+  entity rarities {
+    * id : uuid <<PK>>
     -- Atributos --
-    * nome : varchar(60) <<UQ>>
-    * ordem : smallint
+    * name : varchar(60) <<UQ>>
+    * sort_order : smallint
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity idioma {
-    * id : bigserial <<PK>>
+  entity languages {
+    * id : uuid <<PK>>
     -- Atributos --
-    * nome : varchar(60)
-    * codigo : varchar(5) <<UQ>>
+    * name : varchar(60)
+    * code : varchar(5) <<UQ>>
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity estado_conservacao {
-    * id : bigserial <<PK>>
+  entity card_conditions {
+    * id : uuid <<PK>>
     -- Atributos --
-    * nome : varchar(60) <<UQ>>
-    * ordem : smallint
+    * name : varchar(60) <<UQ>>
+    * sort_order : smallint
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity album {
-    * id : bigserial <<PK>>
+  entity albums {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    o categoria_id : bigint <<FK>>
+    o category_id : uuid <<FK>>
     -- Atributos --
-    * titulo : varchar(160)
-    o editora : varchar(120)
-    o ano : smallint
-    o descricao : text
-    o capa_url : varchar(255)
-    * total_cartas : integer
-    * status : enum (ATIVO, INATIVO)
-    * data_cadastro : timestamp
+    * title : varchar(160)
+    o publisher : varchar(120)
+    o year : smallint
+    o description : text
+    o cover_url : varchar(255)
+    * total_cards : integer
+    * status : enum (ACTIVE, INACTIVE)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity carta {
-    * id : bigserial <<PK>>
+  entity cards {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    o album_id : bigint <<FK>>
-    o categoria_id : bigint <<FK>>
-    o raridade_id : bigint <<FK>>
-    o idioma_id : bigint <<FK>>
+    o album_id : uuid <<FK>>
+    o category_id : uuid <<FK>>
+    o rarity_id : uuid <<FK>>
+    o language_id : uuid <<FK>>
     -- Atributos --
-    * nome : varchar(160)
-    o numero : varchar(20)
-    o descricao : text
-    o imagem_frente_url : varchar(255)
-    o imagem_verso_url : varchar(255)
-    * data_cadastro : timestamp
-    .. UQ (album_id, numero) ..
+    * name : varchar(160)
+    o number : varchar(20)
+    o description : text
+    o front_image_url : varchar(255)
+    o back_image_url : varchar(255)
+    .. UQ (album_id, number) ..
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity foto_carta {
-    * id : bigserial <<PK>>
+  entity card_photos {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * carta_id : bigint <<FK>>
+    * card_id : uuid <<FK>>
     -- Atributos --
     * url : varchar(255)
-    * ordem : smallint
+    * sort_order : smallint
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity historico_preco {
-    * id : bigserial <<PK>>
+  entity price_history {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * carta_id : bigint <<FK>>
+    * card_id : uuid <<FK>>
     -- Atributos --
-    * preco : decimal(10,2)
-    * data_referencia : date
-    * origem : enum (VENDA, ANUNCIO)
+    * price : decimal(10,2)
+    * reference_date : date
+    * source : enum (SALE, LISTING)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -246,39 +300,45 @@ package "2. Catalogo Global (Albuns e Cartas)" as M2 #E6F3EC {
 ' =====================================================================
 package "3. Colecao do Cliente" as M3 #F0E9F7 {
 
-  entity colecao {
-    * id : bigserial <<PK>>
+  entity collections {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * usuario_id : bigint <<FK>> <<UQ>>
+    * user_id : uuid <<FK>> <<UQ>>
     -- Atributos --
-    * publica : boolean
-    o link_compartilhamento : varchar(120) <<UQ>>
-    * data_criacao : timestamp
+    * is_public : boolean
+    o share_link : varchar(120) <<UQ>>
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity album_usuario {
-    * id : bigserial <<PK>>
+  entity user_albums {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * colecao_id : bigint <<FK>>
-    * album_id : bigint <<FK>>
+    * collection_id : uuid <<FK>>
+    * album_id : uuid <<FK>>
     -- Atributos --
-    * favorito : boolean
-    * progresso_percentual : decimal(5,2)
-    * data_inicio : timestamp
-    .. UQ (colecao_id, album_id) ..
+    * is_favorite : boolean
+    * progress_percentage : decimal(5,2)
+    .. UQ (collection_id, album_id) ..
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity colecao_carta {
-    * id : bigserial <<PK>>
+  entity collection_cards {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * colecao_id : bigint <<FK>>
-    * carta_id : bigint <<FK>>
+    * collection_id : uuid <<FK>>
+    * card_id : uuid <<FK>>
     -- Atributos --
-    * status : enum (POSSUO, FALTANTE, REPETIDA)
-    * quantidade : integer
-    o valor_mercado : decimal(10,2)
-    * data_adicao : timestamp
-    .. UQ (colecao_id, carta_id) ..
+    * status : enum (OWNED, MISSING, DUPLICATE)
+    * quantity : integer
+    o market_value : decimal(10,2)
+    .. UQ (collection_id, card_id) ..
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -287,82 +347,98 @@ package "3. Colecao do Cliente" as M3 #F0E9F7 {
 ' =====================================================================
 package "4. Comunidade (Grupos)" as M4 #FBEEE3 {
 
-  entity grupo {
-    * id : bigserial <<PK>>
+  entity groups {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * criador_id : bigint <<FK>>
+    * creator_id : uuid <<FK>>
     -- Atributos --
-    * nome : varchar(120)
-    o descricao : text
-    o imagem_capa_url : varchar(255)
-    * tipo_acesso : enum (ABERTO, FECHADO)
-    * status : enum (ATIVO, SUSPENSO, EXCLUIDO)
-    * data_criacao : timestamp
+    * name : varchar(120)
+    o description : text
+    o cover_image_url : varchar(255)
+    * access_type : enum (OPEN, CLOSED)
+    * status : enum (ACTIVE, SUSPENDED)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity membro_grupo {
-    * id : bigserial <<PK>>
+  entity group_members {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * grupo_id : bigint <<FK>>
-    * usuario_id : bigint <<FK>>
+    * group_id : uuid <<FK>>
+    * user_id : uuid <<FK>>
     -- Atributos --
-    * papel : enum (MEMBRO, ADMIN)
-    * data_entrada : timestamp
-    o silenciado_ate : timestamp
-    .. UQ (grupo_id, usuario_id) ..
+    * role : enum (MEMBER, ADMIN)
+    o muted_until : timestamptz
+    .. UQ (group_id, user_id) ..
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity solicitacao_grupo {
-    * id : bigserial <<PK>>
+  entity group_join_requests {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * grupo_id : bigint <<FK>>
-    * usuario_id : bigint <<FK>>
-    o avaliado_por_id : bigint <<FK>>
+    * group_id : uuid <<FK>>
+    * user_id : uuid <<FK>>
+    o reviewed_by_id : uuid <<FK>>
     -- Atributos --
-    * status : enum (PENDENTE, APROVADA, RECUSADA)
-    * data_solicitacao : timestamp
-    o data_avaliacao : timestamp
+    * status : enum (PENDING, APPROVED, REJECTED)
+    o reviewed_at : timestamptz
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity mensagem_grupo {
-    * id : bigserial <<PK>>
+  entity group_messages {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * grupo_id : bigint <<FK>>
-    * autor_id : bigint <<FK>>
-    o mensagem_respondida_id : bigint <<FK>>
-    o carta_id : bigint <<FK>>
-    o anuncio_id : bigint <<FK>>
+    * group_id : uuid <<FK>>
+    * author_id : uuid <<FK>>
+    o reply_to_id : uuid <<FK>>
+    o card_id : uuid <<FK>>
+    o listing_id : uuid <<FK>>
     -- Atributos --
-    * tipo_conteudo : enum (TEXTO, IMAGEM, CARTA, ANUNCIO, ENQUETE)
-    o conteudo : text
-    o anexo_url : varchar(255)
-    * fixada : boolean
-    * data_envio : timestamp
+    * content_type : enum (TEXT, IMAGE, CARD, LISTING, POLL)
+    o content : text
+    o attachment_url : varchar(255)
+    * pinned : boolean
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity enquete {
-    * id : bigserial <<PK>>
+  entity polls {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * mensagem_grupo_id : bigint <<FK>> <<UQ>>
+    * group_message_id : uuid <<FK>> <<UQ>>
     -- Atributos --
-    * pergunta : varchar(255)
-    * multipla_escolha : boolean
-    o encerra_em : timestamp
+    * question : varchar(255)
+    * multiple_choice : boolean
+    o closes_at : timestamptz
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity opcao_enquete {
-    * id : bigserial <<PK>>
+  entity poll_options {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * enquete_id : bigint <<FK>>
+    * poll_id : uuid <<FK>>
     -- Atributos --
-    * texto : varchar(160)
+    * text : varchar(160)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity voto_enquete {
-    * opcao_enquete_id : bigint <<PK>> <<FK>>
-    * usuario_id : bigint <<PK>> <<FK>>
+  entity poll_votes {
+    * poll_option_id : uuid <<PK>> <<FK>>
+    * user_id : uuid <<PK>> <<FK>>
     -- Atributos --
-    * data_voto : timestamp
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -371,43 +447,51 @@ package "4. Comunidade (Grupos)" as M4 #FBEEE3 {
 ' =====================================================================
 package "5. Chat Pessoal" as M5 #E4F2F5 {
 
-  entity conversa {
-    * id : bigserial <<PK>>
+  entity conversations {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    o anuncio_id : bigint <<FK>>
+    o listing_id : uuid <<FK>>
     -- Atributos --
-    * data_criacao : timestamp
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity participante_conversa {
-    * conversa_id : bigint <<PK>> <<FK>>
-    * usuario_id : bigint <<PK>> <<FK>>
+  entity conversation_participants {
+    * conversation_id : uuid <<PK>> <<FK>>
+    * user_id : uuid <<PK>> <<FK>>
     -- Atributos --
-    * data_entrada : timestamp
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity mensagem {
-    * id : bigserial <<PK>>
+  entity messages {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * conversa_id : bigint <<FK>>
-    * autor_id : bigint <<FK>>
-    o mensagem_respondida_id : bigint <<FK>>
+    * conversation_id : uuid <<FK>>
+    * author_id : uuid <<FK>>
+    o reply_to_id : uuid <<FK>>
     -- Atributos --
-    o conteudo : text
-    o anexo_url : varchar(255)
-    * lida : boolean
-    o data_leitura : timestamp
-    * data_envio : timestamp
+    o content : text
+    o attachment_url : varchar(255)
+    * is_read : boolean
+    o read_at : timestamptz
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity bloqueio_usuario {
-    * id : bigserial <<PK>>
+  entity user_blocks {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * bloqueador_id : bigint <<FK>>
-    * bloqueado_id : bigint <<FK>>
+    * blocker_id : uuid <<FK>>
+    * blocked_id : uuid <<FK>>
     -- Atributos --
-    * data_bloqueio : timestamp
-    .. UQ (bloqueador_id, bloqueado_id) ..
+    .. UQ (blocker_id, blocked_id) ..
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -416,81 +500,93 @@ package "5. Chat Pessoal" as M5 #E4F2F5 {
 ' =====================================================================
 package "6. Marketplace (Anuncios, Pedidos, Avaliacoes)" as M6 #FBE9EF {
 
-  entity anuncio {
-    * id : bigserial <<PK>>
+  entity listings {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * vendedor_id : bigint <<FK>>
-    * carta_id : bigint <<FK>>
-    o estado_conservacao_id : bigint <<FK>>
+    * seller_id : uuid <<FK>>
+    * card_id : uuid <<FK>>
+    o condition_id : uuid <<FK>>
     -- Atributos --
-    * preco : decimal(10,2)
-    * quantidade_disponivel : integer
-    o descricao : text
-    * status : enum (ATIVO, PAUSADO, ENCERRADO, EXCLUIDO)
-    * data_criacao : timestamp
-    * data_atualizacao : timestamp
+    * price : decimal(10,2)
+    * available_quantity : integer
+    o description : text
+    * status : enum (ACTIVE, PAUSED, CLOSED)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity foto_anuncio {
-    * id : bigserial <<PK>>
+  entity listing_photos {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * anuncio_id : bigint <<FK>>
+    * listing_id : uuid <<FK>>
     -- Atributos --
     * url : varchar(255)
-    * ordem : smallint
+    * sort_order : smallint
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity proposta {
-    * id : bigserial <<PK>>
+  entity offers {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * anuncio_id : bigint <<FK>>
-    * comprador_id : bigint <<FK>>
+    * listing_id : uuid <<FK>>
+    * buyer_id : uuid <<FK>>
     -- Atributos --
-    * valor_ofertado : decimal(10,2)
-    o mensagem : varchar(255)
-    * status : enum (PENDENTE, ACEITA, RECUSADA, EXPIRADA)
-    * data_criacao : timestamp
+    * offered_amount : decimal(10,2)
+    o message : varchar(255)
+    * status : enum (PENDING, ACCEPTED, REJECTED, EXPIRED)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity pedido {
-    * id : bigserial <<PK>>
+  entity orders {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * anuncio_id : bigint <<FK>>
-    * comprador_id : bigint <<FK>>
-    * vendedor_id : bigint <<FK>>
-    * endereco_entrega_id : bigint <<FK>>
+    * listing_id : uuid <<FK>>
+    * buyer_id : uuid <<FK>>
+    * seller_id : uuid <<FK>>
+    * shipping_address_id : uuid <<FK>>
     -- Atributos --
-    * quantidade : integer
-    * valor_itens : decimal(10,2)
-    * valor_frete : decimal(10,2)
-    * valor_total : decimal(10,2)
-    * forma_envio : varchar(60)
-    * status : enum (AGUARDANDO_PAGAMENTO, PAGO, ENVIADO, ENTREGUE, CANCELADO)
-    * data_pedido : timestamp
+    * quantity : integer
+    * items_amount : decimal(10,2)
+    * shipping_amount : decimal(10,2)
+    * total_amount : decimal(10,2)
+    * shipping_method : varchar(60)
+    * status : enum (AWAITING_PAYMENT, PAID, SHIPPED, DELIVERED, CANCELED)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity pagamento {
-    * id : bigserial <<PK>>
+  entity payments {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * pedido_id : bigint <<FK>> <<UQ>>
+    * order_id : uuid <<FK>> <<UQ>>
     -- Atributos --
-    * metodo : enum (CARTAO_CREDITO, PIX, BOLETO)
-    * valor : decimal(10,2)
-    * status : enum (PENDENTE, APROVADO, RECUSADO, ESTORNADO)
-    o gateway_referencia : varchar(120)
-    * data_atualizacao : timestamp
+    * method : enum (CREDIT_CARD, PIX, BOLETO)
+    * value : decimal(10,2)
+    * status : enum (PENDING, APPROVED, REJECTED, REFUNDED)
+    o gateway_reference : varchar(120)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity avaliacao {
-    * id : bigserial <<PK>>
+  entity reviews {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * pedido_id : bigint <<FK>> <<UQ>>
-    * autor_id : bigint <<FK>>
-    * vendedor_id : bigint <<FK>>
+    * order_id : uuid <<FK>> <<UQ>>
+    * author_id : uuid <<FK>>
+    * seller_id : uuid <<FK>>
     -- Atributos --
-    * nota : smallint (1 a 5)
-    o comentario : varchar(500)
-    * data_criacao : timestamp
+    * rating : smallint (1 a 5)
+    o comment : varchar(500)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -499,52 +595,60 @@ package "6. Marketplace (Anuncios, Pedidos, Avaliacoes)" as M6 #FBE9EF {
 ' =====================================================================
 package "7. Notificacoes e Favoritos" as M7 #FCF5E0 {
 
-  entity favorito {
-    * id : bigserial <<PK>>
+  entity favorites {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * usuario_id : bigint <<FK>>
-    o album_id : bigint <<FK>>
-    o carta_id : bigint <<FK>>
-    o grupo_id : bigint <<FK>>
+    * user_id : uuid <<FK>>
+    o album_id : uuid <<FK>>
+    o card_id : uuid <<FK>>
+    o group_id : uuid <<FK>>
     -- Atributos --
-    * tipo : enum (ALBUM, CARTA, GRUPO)
-    * data_criacao : timestamp
+    * type : enum (ALBUM, CARD, GROUP)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity alerta_preco {
-    * id : bigserial <<PK>>
+  entity price_alerts {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * usuario_id : bigint <<FK>>
-    * carta_id : bigint <<FK>>
+    * user_id : uuid <<FK>>
+    * card_id : uuid <<FK>>
     -- Atributos --
-    * preco_alvo : decimal(10,2)
-    * ativo : boolean
-    * data_criacao : timestamp
+    * target_price : decimal(10,2)
+    * active : boolean
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity notificacao {
-    * id : bigserial <<PK>>
+  entity notifications {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * usuario_id : bigint <<FK>>
-    o notificacao_global_id : bigint <<FK>>
+    * user_id : uuid <<FK>>
+    o global_notification_id : uuid <<FK>>
     -- Atributos --
-    * titulo : varchar(120)
-    * mensagem : varchar(500)
-    * tipo : varchar(40)
-    o link_referencia : varchar(255)
-    * lida : boolean
-    * data_criacao : timestamp
+    * title : varchar(120)
+    * message : varchar(500)
+    * type : varchar(40)
+    o reference_link : varchar(255)
+    * is_read : boolean
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity notificacao_global {
-    * id : bigserial <<PK>>
+  entity global_notifications {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * admin_id : bigint <<FK>>
+    * admin_id : uuid <<FK>>
     -- Atributos --
-    * titulo : varchar(120)
-    * conteudo : varchar(500)
-    * total_destinatarios : integer
-    * data_disparo : timestamp
+    * title : varchar(120)
+    * content : varchar(500)
+    * recipient_count : integer
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -553,59 +657,67 @@ package "7. Notificacoes e Favoritos" as M7 #FCF5E0 {
 ' =====================================================================
 package "8. Moderacao e Administracao" as M8 #ECECEF {
 
-  entity denuncia {
-    * id : bigserial <<PK>>
+  entity reports {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * denunciante_id : bigint <<FK>>
-    o moderador_id : bigint <<FK>>
-    o anuncio_id : bigint <<FK>>
-    o usuario_alvo_id : bigint <<FK>>
-    o mensagem_grupo_id : bigint <<FK>>
+    * reporter_id : uuid <<FK>>
+    o moderator_id : uuid <<FK>>
+    o listing_id : uuid <<FK>>
+    o target_user_id : uuid <<FK>>
+    o group_message_id : uuid <<FK>>
     -- Atributos --
-    * tipo_alvo : enum (ANUNCIO, VENDEDOR, USUARIO, PERFIL, MENSAGEM_GRUPO)
-    * motivo : varchar(90)
-    o descricao : varchar(500)
-    * status : enum (PENDENTE, EM_ANALISE, RESOLVIDA, DESCARTADA)
-    * data_criacao : timestamp
-    o data_resolucao : timestamp
+    * target_type : enum (LISTING, SELLER, USER, PROFILE, GROUP_MESSAGE)
+    * reason : varchar(90)
+    o description : varchar(500)
+    * status : enum (PENDING, UNDER_REVIEW, RESOLVED, DISMISSED)
+    o resolved_at : timestamptz
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity solicitacao_cadastro {
-    * id : bigserial <<PK>>
+  entity catalog_requests {
+    * id : uuid <<PK>>
     -- Chaves estrangeiras --
-    * solicitante_id : bigint <<FK>>
-    o avaliado_por_id : bigint <<FK>>
-    o carta_id : bigint <<FK>>
-    o album_id : bigint <<FK>>
+    * requester_id : uuid <<FK>>
+    o reviewed_by_id : uuid <<FK>>
+    o card_id : uuid <<FK>>
+    o album_id : uuid <<FK>>
     -- Atributos --
-    * tipo : enum (CARTA, ALBUM, CATEGORIA)
-    * dados : jsonb
-    * status : enum (PENDENTE, APROVADA, RECUSADA)
-    * data_criacao : timestamp
-    o data_avaliacao : timestamp
+    * type : enum (CARD, ALBUM, CATEGORY)
+    * data : jsonb
+    * status : enum (PENDING, APPROVED, REJECTED)
+    o reviewed_at : timestamptz
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity log_auditoria {
-    * id : bigserial <<PK>>
+  entity audit_logs {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    * admin_id : bigint <<FK>>
+    * admin_id : uuid <<FK>>
     -- Atributos --
-    * acao : varchar(90)
-    * entidade_afetada : varchar(60)
-    o entidade_id : bigint
-    o detalhes : jsonb
-    * data_registro : timestamp
+    * action : varchar(90)
+    * entity_type : varchar(60)
+    o entity_id : uuid
+    o details : jsonb
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 
-  entity configuracao_global {
-    * id : bigserial <<PK>>
+  entity global_settings {
+    * id : uuid <<PK>>
     -- Chave estrangeira --
-    o atualizado_por_id : bigint <<FK>>
+    o updated_by_id : uuid <<FK>>
     -- Atributos --
-    * chave : varchar(90) <<UQ>>
-    * valor : text
-    o descricao : varchar(255)
-    * data_atualizacao : timestamp
+    * key : varchar(90) <<UQ>>
+    * value : text
+    o description : varchar(255)
+    * created_at : timestamptz
+    * updated_at : timestamptz
+    o deleted_at : timestamptz
   }
 }
 
@@ -614,95 +726,96 @@ package "8. Moderacao e Administracao" as M8 #ECECEF {
 ' =====================================================================
 
 ' --- 1. Usuarios, Perfil e Acesso -------------------------------------
-usuario   ||--||  perfil                  : possui
-usuario   ||--o{  endereco                : cadastra
-usuario   ||--o{  token_recuperacao_senha : solicita
-usuario   ||--o{  usuario_conquista       : desbloqueia
-conquista ||--o{  usuario_conquista       : concedida em
-usuario   ||--o{  assinatura              : assina
+users   ||--||  profiles                  : possui
+users   ||--o{  addresses                : cadastra
+users   ||--o{  password_reset_tokens : solicita
+users   ||--o{  refresh_tokens        : mantem sessoes
+users   ||--o{  user_achievements       : desbloqueia
+achievements ||--o{  user_achievements       : concedida em
+users   ||--o{  subscriptions              : assina
 
 ' --- 2. Catalogo Global -----------------------------------------------
-categoria |o--o{ categoria       : subdivide
-categoria ||--o{ album           : classifica
-categoria ||--o{ carta           : classifica
-raridade  ||--o{ carta           : define
-idioma    ||--o{ carta           : define
-album     ||--o{ carta           : contem
-carta     ||--o{ foto_carta      : ilustrada por
-carta     ||--o{ historico_preco : registra
+categories |o--o{ categories       : subdivide
+categories ||--o{ albums           : classifica
+categories ||--o{ cards           : classifica
+rarities  ||--o{ cards           : define
+languages    ||--o{ cards           : define
+albums     ||--o{ cards           : contem
+cards     ||--o{ card_photos      : ilustrada por
+cards     ||--o{ price_history : registra
 
 ' --- 3. Colecao do Cliente --------------------------------------------
-usuario ||--|| colecao       : mantem
-colecao ||--o{ album_usuario : acompanha
-album   ||--o{ album_usuario : acompanhado em
-colecao ||--o{ colecao_carta : registra
-carta   ||--o{ colecao_carta : aparece em
+users ||--|| collections       : mantem
+collections ||--o{ user_albums : acompanha
+albums   ||--o{ user_albums : acompanhado em
+collections ||--o{ collection_cards : registra
+cards   ||--o{ collection_cards : aparece em
 
 ' --- 4. Comunidade (Grupos) -------------------------------------------
-usuario        ||--o{ grupo             : cria
-grupo          ||--|{ membro_grupo      : tem
-usuario        ||--o{ membro_grupo      : participa
-grupo          ||--o{ solicitacao_grupo : recebe
-usuario        ||--o{ solicitacao_grupo : envia
-usuario        |o--o{ solicitacao_grupo : avalia
-grupo          ||--o{ mensagem_grupo    : hospeda
-usuario        ||--o{ mensagem_grupo    : publica
-mensagem_grupo |o--o{ mensagem_grupo    : responde
-carta          |o--o{ mensagem_grupo    : compartilhada
-anuncio        |o--o{ mensagem_grupo    : compartilhado
-mensagem_grupo ||--|| enquete           : contem
-enquete        ||--|{ opcao_enquete     : oferece
-opcao_enquete  ||--o{ voto_enquete      : recebe
-usuario        ||--o{ voto_enquete      : vota
+users        ||--o{ groups             : cria
+groups          ||--|{ group_members      : tem
+users        ||--o{ group_members      : participa
+groups          ||--o{ group_join_requests : recebe
+users        ||--o{ group_join_requests : envia
+users        |o--o{ group_join_requests : avalia
+groups          ||--o{ group_messages    : hospeda
+users        ||--o{ group_messages    : publica
+group_messages |o--o{ group_messages    : responde
+cards          |o--o{ group_messages    : compartilhada
+listings        |o--o{ group_messages    : compartilhado
+group_messages ||--|| polls           : contem
+polls        ||--|{ poll_options     : oferece
+poll_options  ||--o{ poll_votes      : recebe
+users        ||--o{ poll_votes      : vota
 
 ' --- 5. Chat Pessoal ---------------------------------------------------
-conversa ||--|{ participante_conversa : reune
-usuario  ||--o{ participante_conversa : participa
-conversa ||--o{ mensagem              : contem
-usuario  ||--o{ mensagem              : envia
-mensagem |o--o{ mensagem              : responde
-anuncio  |o--o{ conversa              : origina
-usuario  ||--o{ bloqueio_usuario      : bloqueia
-usuario  ||--o{ bloqueio_usuario      : e bloqueado
+conversations ||--|{ conversation_participants : reune
+users  ||--o{ conversation_participants : participa
+conversations ||--o{ messages              : contem
+users  ||--o{ messages              : envia
+message |o--o{ messages              : responde
+listings  |o--o{ conversations              : origina
+users  ||--o{ user_blocks      : bloqueia
+users  ||--o{ user_blocks      : e bloqueado
 
 ' --- 6. Marketplace ----------------------------------------------------
-usuario            ||--o{ anuncio      : anuncia
-carta              ||--o{ anuncio      : ofertada em
-estado_conservacao |o--o{ anuncio      : descreve
-anuncio            ||--o{ foto_anuncio : exibe
-anuncio            ||--o{ proposta     : recebe
-usuario            ||--o{ proposta     : propoe
-anuncio            ||--o{ pedido       : gera
-usuario            ||--o{ pedido       : compra
-usuario            ||--o{ pedido       : vende
-endereco           ||--o{ pedido       : entregue em
-pedido             ||--|| pagamento    : quitado por
-pedido             ||--|| avaliacao    : avaliado por
-usuario            ||--o{ avaliacao    : escreve
-usuario            ||--o{ avaliacao    : recebe
+users            ||--o{ listings      : anuncia
+cards              ||--o{ listings      : ofertada em
+card_conditions |o--o{ listings      : descreve
+listings            ||--o{ listing_photos : exibe
+listings            ||--o{ offers     : recebe
+users            ||--o{ offers     : propoe
+listings            ||--o{ orders       : gera
+users            ||--o{ orders       : compra
+users            ||--o{ orders       : vende
+addresses           ||--o{ orders       : entregue em
+orders             ||--|| payments    : quitado por
+orders             ||--|| reviews    : avaliado por
+users            ||--o{ reviews    : escreve
+users            ||--o{ reviews    : recebe
 
 ' --- 7. Notificacoes e Favoritos ---------------------------------------
-usuario            ||--o{ favorito           : favorita
-album              |o--o{ favorito           : alvo
-carta              |o--o{ favorito           : alvo
-grupo              |o--o{ favorito           : alvo
-usuario            ||--o{ alerta_preco       : configura
-carta              ||--o{ alerta_preco       : monitorada
-usuario            ||--o{ notificacao        : recebe
-notificacao_global |o--o{ notificacao        : expande em
-usuario            ||--o{ notificacao_global : dispara
+users            ||--o{ favorites           : favorita
+albums              |o--o{ favorites           : alvo
+cards              |o--o{ favorites           : alvo
+groups              |o--o{ favorites           : alvo
+users            ||--o{ price_alerts       : configura
+cards              ||--o{ price_alerts       : monitorada
+users            ||--o{ notifications        : recebe
+global_notifications |o--o{ notifications        : expande em
+users            ||--o{ global_notifications : dispara
 
 ' --- 8. Moderacao e Administracao --------------------------------------
-usuario        ||--o{ denuncia             : denuncia
-usuario        |o--o{ denuncia             : modera
-anuncio        |o--o{ denuncia             : alvo
-usuario        |o--o{ denuncia             : alvo
-mensagem_grupo |o--o{ denuncia             : alvo
-usuario        ||--o{ solicitacao_cadastro : solicita
-usuario        |o--o{ solicitacao_cadastro : aprova
-carta          |o--o{ solicitacao_cadastro : resulta em
-album          |o--o{ solicitacao_cadastro : resulta em
-usuario        ||--o{ log_auditoria        : produz
-usuario        |o--o{ configuracao_global  : atualiza
+users        ||--o{ reports             : denuncia
+users        |o--o{ reports             : modera
+listings        |o--o{ reports             : alvo
+users        |o--o{ reports             : alvo
+group_messages |o--o{ reports             : alvo
+users        ||--o{ catalog_requests : solicita
+users        |o--o{ catalog_requests : aprova
+cards          |o--o{ catalog_requests : resulta em
+albums          |o--o{ catalog_requests : resulta em
+users        ||--o{ audit_logs        : produz
+users        |o--o{ global_settings  : atualiza
 
 @enduml
