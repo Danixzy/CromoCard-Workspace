@@ -2,13 +2,13 @@
 //  Fonte da verdade do MODELO DE DADOS: docs/Diagramas/DER/dbdiagram.io/03-der-completo.dbml
 //  Este diagrama e derivado do DER + dos Casos de Uso (docs/Casos-De-Uso/) e
 //  acrescenta o que o DER (fisico/relacional) nao mostra: heranca de tipos de
-//  usuario e comportamento (metodos) de cada classe. Ver ADR-0015, ADR-0016 e
-//  ADR-0017 em docs/ADR/ para o racional de cada decisao de modelagem.
+//  usuario e comportamento (metodos) de cada classe. Ver ADR-035, ADR-036 e
+//  ADR-037 em docs/ADR/ para o racional de cada decisao de modelagem.
 //
 //  43 classes + 22 enumeracoes, organizados nos mesmos 8 modulos do DER.
 //  Relacoes usam rotulo textual com multiplicidade (o LikeC4 nao tem notacao
 //  UML nativa de heranca/composicao/agregacao) - ver legenda no README.md
-//  desta pasta e o ADR-0017.
+//  desta pasta e o ADR-037.
 // =====================================================================
 
 specification {
@@ -36,7 +36,7 @@ model {
       observacoes """
         Classe base/abstrata: toda conta e um Usuario; o papel (Cliente,
         Vendedor, Administrador) e definido no cadastro e nao muda depois
-        (ver ADR-0015 - Single Table Inheritance / enum tipo_usuario no DER).
+        (ver ADR-035 - Single Table Inheritance / enum tipo_usuario no DER).
         Relacoes de outras classes para "usuario" (nao para uma subclasse)
         valem para qualquer um dos tres papeis.
       """

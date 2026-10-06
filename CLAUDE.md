@@ -13,9 +13,8 @@ Idioma do projeto: **português (pt-BR)** — responda, documente e escreva comm
 ```
 ESCOLA-TI/                         (repo de documentação/workspace — branch de trabalho: development, principal: main)
 ├── docs/
-│   ├── ADR/                       0001–00NN-titulo.md + README.md (índice) — decisões de arquitetura, status Pendente/Aceita/Rejeitada/Substituída
+│   ├── ADR/                       ADR-001…037 + README.md (índice e modelo) — decisões de arquitetura; LEIA antes de mexer no backend
 │   ├── Padroes/                   CONTRIBUTING.md e template de PR (fonte para os repos de código)
-│   ├── ADRs/                      decisões de arquitetura do backend (ADR-001…010) — LEIA antes de mexer no backend
 │   ├── Casos-De-Uso/              NN-nome-do-caso.md (01–93), user-stories.md, resumo-user-stories.md, CromoCard 1.xlsx
 │   ├── Diagrama-de-Classe/        cromocard-diagrama-classes.v2.c4 (LikeC4, atual) + .v1.c4 (histórico) + README.md — 43 classes, 1:1 com o DER
 │   └── Diagramas/
@@ -141,7 +140,7 @@ A tabela de rastreabilidade entidade → caso de uso está em `docs/Diagramas/DE
 - Nas legendas `.puml`, escreva `|` como `&#124;`.
 - C4 usa `!include` do C4-PlantUML via GitHub raw.
 
-## Arquitetura do backend (decidida — ver `docs/ADRs/`)
+## Arquitetura do backend (decidida — ver `docs/ADR/`)
 
 - **Monólito modular** (ADR-001): um repo, um banco, módulos por domínio em `src/domains/<dominio>`.
 - **Stack** (ADR-002/003): Node 24 LTS + TypeScript strict + Express 5 + Prisma/PostgreSQL;
@@ -180,7 +179,8 @@ A tabela de rastreabilidade entidade → caso de uso está em `docs/Diagramas/DE
   `/health` e `/health/ready`, shutdown gracioso.
 - Critério de code review: Clean Code, SOLID, Object Calisthenics (skill `code-review-daniel`).
 
-Ao tomar uma nova decisão de arquitetura, registre um ADR novo em `docs/ADRs/` (não edite um ADR aceito).
+Ao tomar uma nova decisão de arquitetura, registre um ADR novo em `docs/ADR/`, com o próximo número e o
+modelo do `README.md` da pasta (não edite um ADR aceito).
 
 ## Git (ADR-013)
 

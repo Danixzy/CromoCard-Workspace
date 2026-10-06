@@ -28,13 +28,13 @@ A v1 (histórico) tinha três problemas que geravam retrabalho:
 
 Este arquivo corrige os três pontos. As decisões de modelagem tomadas na correção (herança de
 tipos de usuário, granularidade 1:1 com o DER, notação de relacionamento) estão documentadas como
-ADR — ver `docs/ADR/0015-*.md` a `0017-*.md`.
+ADR — ver `docs/ADR/ADR-035-*.md` a `ADR-037-*.md`.
 
 ## Estrutura das views
 
 | View | Conteúdo |
 |---|---|
-| `heranca_usuarios` | Só a hierarquia Usuário → Cliente/Vendedor/Administrador — destaque da decisão da ADR-0015 |
+| `heranca_usuarios` | Só a hierarquia Usuário → Cliente/Vendedor/Administrador — destaque da decisão da ADR-035 |
 | `modulo1` a `modulo8` | Uma view por módulo do DER, com as classes do módulo + as classes de outros módulos que ele referencia (para a relação fazer sentido isolada) |
 | `visao_geral_completa` | Todas as 65 classes/enums juntas — **só para conferência**, não para apresentar. Use as views por módulo na banca, do mesmo jeito que o DER usa 01/02/03 separados em vez de um único diagrama gigante. |
 
@@ -59,7 +59,7 @@ destino> : <papel>`:
 (DER) isso é **uma única tabela** `usuario` com a coluna `tipo_usuario` (enum) como discriminador
 — um padrão de mapeamento conhecido como *Single Table Inheritance*. O diagrama de classes mantém
 a herança porque o **comportamento** de cada papel é bem diferente (métodos exclusivos de
-Vendedor e Administrador), mesmo a persistência sendo uma tabela só. Ver ADR-0015 para o racional
+Vendedor e Administrador), mesmo a persistência sendo uma tabela só. Ver ADR-035 para o racional
 completo e para quando cada relação do diagrama aponta para `Usuario` (genérico) versus para
 `Vendedor`/`Administrador` (papel específico).
 
