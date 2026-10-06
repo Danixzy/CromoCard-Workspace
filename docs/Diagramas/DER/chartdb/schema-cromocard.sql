@@ -10,35 +10,35 @@
 --  Serve tambem para dbdiagram.io (Import > From PostgreSQL),
 --  DrawSQL, QuickDBD, pgModeler e para criar o banco de verdade.
 --
---  43 tabelas | 76 chaves estrangeiras | 22 enums
+--  44 tabelas | 77 chaves estrangeiras | 22 enums
 --  Gerado a partir de DER/dbdiagram.io/03-der-completo.dbml
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
 -- TIPOS ENUMERADOS
 -- ---------------------------------------------------------------------
-CREATE TYPE tipo_usuario AS ENUM ('CLIENTE', 'VENDEDOR', 'ADMINISTRADOR');
-CREATE TYPE status_usuario AS ENUM ('ATIVO', 'SUSPENSO', 'EXCLUIDO');
-CREATE TYPE privacidade AS ENUM ('PUBLICO', 'PRIVADO');
-CREATE TYPE tipo_categoria AS ENUM ('ALBUM', 'CARTA');
-CREATE TYPE status_album AS ENUM ('ATIVO', 'INATIVO');
-CREATE TYPE origem_preco AS ENUM ('VENDA', 'ANUNCIO');
-CREATE TYPE status_plano AS ENUM ('ATIVA', 'CANCELADA', 'EXPIRADA');
-CREATE TYPE status_carta_colecao AS ENUM ('POSSUO', 'FALTANTE', 'REPETIDA');
-CREATE TYPE tipo_acesso_grupo AS ENUM ('ABERTO', 'FECHADO');
-CREATE TYPE status_grupo AS ENUM ('ATIVO', 'SUSPENSO', 'EXCLUIDO');
-CREATE TYPE papel_membro AS ENUM ('MEMBRO', 'ADMIN');
-CREATE TYPE status_solicitacao AS ENUM ('PENDENTE', 'APROVADA', 'RECUSADA');
-CREATE TYPE tipo_conteudo_msg AS ENUM ('TEXTO', 'IMAGEM', 'CARTA', 'ANUNCIO', 'ENQUETE');
-CREATE TYPE status_anuncio AS ENUM ('ATIVO', 'PAUSADO', 'ENCERRADO', 'EXCLUIDO');
-CREATE TYPE status_proposta AS ENUM ('PENDENTE', 'ACEITA', 'RECUSADA', 'EXPIRADA');
-CREATE TYPE status_pedido AS ENUM ('AGUARDANDO_PAGAMENTO', 'PAGO', 'ENVIADO', 'ENTREGUE', 'CANCELADO');
-CREATE TYPE metodo_pagamento AS ENUM ('CARTAO_CREDITO', 'PIX', 'BOLETO');
-CREATE TYPE status_pagamento AS ENUM ('PENDENTE', 'APROVADO', 'RECUSADO', 'ESTORNADO');
-CREATE TYPE tipo_favorito AS ENUM ('ALBUM', 'CARTA', 'GRUPO');
-CREATE TYPE tipo_alvo_denuncia AS ENUM ('ANUNCIO', 'VENDEDOR', 'USUARIO', 'PERFIL', 'MENSAGEM_GRUPO');
-CREATE TYPE status_denuncia AS ENUM ('PENDENTE', 'EM_ANALISE', 'RESOLVIDA', 'DESCARTADA');
-CREATE TYPE tipo_solic_cadastro AS ENUM ('CARTA', 'ALBUM', 'CATEGORIA');
+CREATE TYPE user_role AS ENUM ('CUSTOMER', 'SELLER', 'ADMIN');
+CREATE TYPE user_status AS ENUM ('ACTIVE', 'SUSPENDED');
+CREATE TYPE privacy AS ENUM ('PUBLIC', 'PRIVATE');
+CREATE TYPE category_type AS ENUM ('ALBUM', 'CARD');
+CREATE TYPE album_status AS ENUM ('ACTIVE', 'INACTIVE');
+CREATE TYPE price_source AS ENUM ('SALE', 'LISTING');
+CREATE TYPE subscription_status AS ENUM ('ACTIVE', 'CANCELED', 'EXPIRED');
+CREATE TYPE collection_card_status AS ENUM ('OWNED', 'MISSING', 'DUPLICATE');
+CREATE TYPE group_access_type AS ENUM ('OPEN', 'CLOSED');
+CREATE TYPE group_status AS ENUM ('ACTIVE', 'SUSPENDED');
+CREATE TYPE member_role AS ENUM ('MEMBER', 'ADMIN');
+CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+CREATE TYPE message_content_type AS ENUM ('TEXT', 'IMAGE', 'CARD', 'LISTING', 'POLL');
+CREATE TYPE listing_status AS ENUM ('ACTIVE', 'PAUSED', 'CLOSED');
+CREATE TYPE offer_status AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED');
+CREATE TYPE order_status AS ENUM ('AWAITING_PAYMENT', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED');
+CREATE TYPE payment_method AS ENUM ('CREDIT_CARD', 'PIX', 'BOLETO');
+CREATE TYPE payment_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'REFUNDED');
+CREATE TYPE favorite_type AS ENUM ('ALBUM', 'CARD', 'GROUP');
+CREATE TYPE report_target_type AS ENUM ('LISTING', 'SELLER', 'USER', 'PROFILE', 'GROUP_MESSAGE');
+CREATE TYPE report_status AS ENUM ('PENDING', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED');
+CREATE TYPE catalog_request_type AS ENUM ('CARD', 'ALBUM', 'CATEGORY');
 
 -- ---------------------------------------------------------------------
 -- TABELAS
@@ -46,520 +46,631 @@ CREATE TYPE tipo_solic_cadastro AS ENUM ('CARTA', 'ALBUM', 'CATEGORIA');
 
 -- ===== 1 - USUARIOS, PERFIL E ACESSO =====
 
-CREATE TABLE usuario (
-    id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(120) NOT NULL,
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    name VARCHAR(120) NOT NULL,
     email VARCHAR(160) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255),
-    tipo_usuario tipo_usuario NOT NULL,
-    status status_usuario NOT NULL DEFAULT 'ATIVO',
-    email_confirmado BOOLEAN NOT NULL DEFAULT false,
-    aceite_termos BOOLEAN NOT NULL DEFAULT false,
+    password_hash VARCHAR(255),
+    role user_role NOT NULL,
+    status user_status NOT NULL DEFAULT 'ACTIVE',
+    email_verified BOOLEAN NOT NULL DEFAULT false,
+    terms_accepted BOOLEAN NOT NULL DEFAULT false,
     oauth_provider VARCHAR(30),
     oauth_id VARCHAR(120),
-    data_cadastro TIMESTAMP NOT NULL DEFAULT now(),
-    data_exclusao TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ  -- soft delete (ADR-015)
 );
 
-CREATE TABLE perfil (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL UNIQUE,
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL UNIQUE,
     bio TEXT,
     avatar_url VARCHAR(255),
-    cidade VARCHAR(120),
-    privacidade_portfolio privacidade NOT NULL DEFAULT 'PUBLICO'
+    city VARCHAR(120),
+    portfolio_privacy privacy NOT NULL DEFAULT 'PUBLIC',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE endereco (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL,
-    rotulo VARCHAR(60) NOT NULL,
-    cep VARCHAR(9) NOT NULL,
-    logradouro VARCHAR(160) NOT NULL,
-    numero VARCHAR(15) NOT NULL,
-    complemento VARCHAR(60),
-    bairro VARCHAR(90) NOT NULL,
-    cidade VARCHAR(90) NOT NULL,
-    estado CHAR(2) NOT NULL,
-    principal BOOLEAN NOT NULL DEFAULT false
+CREATE TABLE addresses (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
+    label VARCHAR(60) NOT NULL,
+    zip_code VARCHAR(9) NOT NULL,
+    street VARCHAR(160) NOT NULL,
+    number VARCHAR(15) NOT NULL,
+    complement VARCHAR(60),
+    neighborhood VARCHAR(90) NOT NULL,
+    city VARCHAR(90) NOT NULL,
+    state CHAR(2) NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE token_recuperacao_senha (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL,
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
-    expira_em TIMESTAMP NOT NULL,
-    usado BOOLEAN NOT NULL DEFAULT false,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+    expires_at TIMESTAMPTZ NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE conquista (
-    id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(90) NOT NULL UNIQUE,
-    descricao VARCHAR(255) NOT NULL,
-    icone_url VARCHAR(255),
-    criterio VARCHAR(255) NOT NULL
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ,
+    user_agent VARCHAR(255),
+    ip_address VARCHAR(45),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE usuario_conquista (
-    usuario_id BIGINT NOT NULL,
-    conquista_id BIGINT NOT NULL,
-    data_obtencao TIMESTAMP NOT NULL DEFAULT now(),
-    PRIMARY KEY (usuario_id, conquista_id)
+CREATE TABLE achievements (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    name VARCHAR(90) NOT NULL UNIQUE,
+    description VARCHAR(255) NOT NULL,
+    icon_url VARCHAR(255),
+    criteria VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE assinatura (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL,
-    plano VARCHAR(20) NOT NULL DEFAULT 'PRO',
-    status status_plano NOT NULL DEFAULT 'ATIVA',
-    metodo_pagamento metodo_pagamento NOT NULL,
-    data_inicio DATE NOT NULL,
-    data_fim DATE,
-    gateway_referencia VARCHAR(120)
+CREATE TABLE user_achievements (
+    user_id UUID NOT NULL,
+    achievement_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id, achievement_id)
+);
+
+CREATE TABLE subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
+    plan VARCHAR(20) NOT NULL DEFAULT 'PRO',
+    status subscription_status NOT NULL DEFAULT 'ACTIVE',
+    payment_method payment_method NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    gateway_reference VARCHAR(120),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- ===== 2 - CATALOGO GLOBAL (ALBUNS E CARTAS) =====
 
-CREATE TABLE categoria (
-    id BIGSERIAL PRIMARY KEY,
-    categoria_pai_id BIGINT,
-    nome VARCHAR(90) NOT NULL,
-    tipo tipo_categoria NOT NULL,
-    descricao VARCHAR(255),
-    padrao BOOLEAN NOT NULL DEFAULT false
+CREATE TABLE categories (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    parent_category_id UUID,
+    name VARCHAR(90) NOT NULL,
+    type category_type NOT NULL,
+    description VARCHAR(255),
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE raridade (
-    id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(60) NOT NULL UNIQUE,
-    ordem SMALLINT NOT NULL
+CREATE TABLE rarities (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    name VARCHAR(60) NOT NULL UNIQUE,
+    sort_order SMALLINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE idioma (
-    id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(60) NOT NULL,
-    codigo VARCHAR(5) NOT NULL UNIQUE
+CREATE TABLE languages (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    name VARCHAR(60) NOT NULL,
+    code VARCHAR(5) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE estado_conservacao (
-    id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(60) NOT NULL UNIQUE,
-    ordem SMALLINT NOT NULL
+CREATE TABLE card_conditions (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    name VARCHAR(60) NOT NULL UNIQUE,
+    sort_order SMALLINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE album (
-    id BIGSERIAL PRIMARY KEY,
-    categoria_id BIGINT,
-    titulo VARCHAR(160) NOT NULL,
-    editora VARCHAR(120),
-    ano SMALLINT,
-    descricao TEXT,
-    capa_url VARCHAR(255),
-    total_cartas INTEGER NOT NULL DEFAULT 0,
-    status status_album NOT NULL DEFAULT 'ATIVO',
-    data_cadastro TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE albums (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    category_id UUID,
+    title VARCHAR(160) NOT NULL,
+    publisher VARCHAR(120),
+    year SMALLINT,
+    description TEXT,
+    cover_url VARCHAR(255),
+    total_cards INTEGER NOT NULL DEFAULT 0,
+    status album_status NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE carta (
-    id BIGSERIAL PRIMARY KEY,
-    album_id BIGINT,
-    categoria_id BIGINT,
-    raridade_id BIGINT,
-    idioma_id BIGINT,
-    nome VARCHAR(160) NOT NULL,
-    numero VARCHAR(20),
-    descricao TEXT,
-    imagem_frente_url VARCHAR(255),
-    imagem_verso_url VARCHAR(255),
-    data_cadastro TIMESTAMP NOT NULL DEFAULT now(),
-    UNIQUE (album_id, numero)
+CREATE TABLE cards (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    album_id UUID,
+    category_id UUID,
+    rarity_id UUID,
+    language_id UUID,
+    name VARCHAR(160) NOT NULL,
+    number VARCHAR(20),
+    description TEXT,
+    front_image_url VARCHAR(255),
+    back_image_url VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    UNIQUE (album_id, number)
 );
 
-CREATE TABLE foto_carta (
-    id BIGSERIAL PRIMARY KEY,
-    carta_id BIGINT NOT NULL,
+CREATE TABLE card_photos (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    card_id UUID NOT NULL,
     url VARCHAR(255) NOT NULL,
-    ordem SMALLINT NOT NULL DEFAULT 0
+    sort_order SMALLINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE historico_preco (
-    id BIGSERIAL PRIMARY KEY,
-    carta_id BIGINT NOT NULL,
-    preco NUMERIC(10,2) NOT NULL,
-    data_referencia DATE NOT NULL,
-    origem origem_preco NOT NULL
+CREATE TABLE price_history (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    card_id UUID NOT NULL,
+    price NUMERIC(10,2) NOT NULL,
+    reference_date DATE NOT NULL,
+    source price_source NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- ===== 3 - COLECAO DO CLIENTE =====
 
-CREATE TABLE colecao (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL UNIQUE,
-    publica BOOLEAN NOT NULL DEFAULT false,
-    link_compartilhamento VARCHAR(120) UNIQUE,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE collections (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL UNIQUE,
+    is_public BOOLEAN NOT NULL DEFAULT false,
+    share_link VARCHAR(120) UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE album_usuario (
-    id BIGSERIAL PRIMARY KEY,
-    colecao_id BIGINT NOT NULL,
-    album_id BIGINT NOT NULL,
-    favorito BOOLEAN NOT NULL DEFAULT false,
-    progresso_percentual NUMERIC(5,2) NOT NULL DEFAULT 0,
-    data_inicio TIMESTAMP NOT NULL DEFAULT now(),
-    UNIQUE (colecao_id, album_id)
+CREATE TABLE user_albums (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    collection_id UUID NOT NULL,
+    album_id UUID NOT NULL,
+    is_favorite BOOLEAN NOT NULL DEFAULT false,
+    progress_percentage NUMERIC(5,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    UNIQUE (collection_id, album_id)
 );
 
-CREATE TABLE colecao_carta (
-    id BIGSERIAL PRIMARY KEY,
-    colecao_id BIGINT NOT NULL,
-    carta_id BIGINT NOT NULL,
-    status status_carta_colecao NOT NULL,
-    quantidade INTEGER NOT NULL DEFAULT 1,
-    valor_mercado NUMERIC(10,2),
-    data_adicao TIMESTAMP NOT NULL DEFAULT now(),
-    UNIQUE (colecao_id, carta_id)
+CREATE TABLE collection_cards (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    collection_id UUID NOT NULL,
+    card_id UUID NOT NULL,
+    status collection_card_status NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    market_value NUMERIC(10,2),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    UNIQUE (collection_id, card_id)
 );
 
 -- ===== 4 - COMUNIDADE (GRUPOS) =====
 
-CREATE TABLE grupo (
-    id BIGSERIAL PRIMARY KEY,
-    criador_id BIGINT NOT NULL,
-    nome VARCHAR(120) NOT NULL,
-    descricao TEXT,
-    imagem_capa_url VARCHAR(255),
-    tipo_acesso tipo_acesso_grupo NOT NULL,
-    status status_grupo NOT NULL DEFAULT 'ATIVO',
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE groups (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    creator_id UUID NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    description TEXT,
+    cover_image_url VARCHAR(255),
+    access_type group_access_type NOT NULL,
+    status group_status NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE membro_grupo (
-    id BIGSERIAL PRIMARY KEY,
-    grupo_id BIGINT NOT NULL,
-    usuario_id BIGINT NOT NULL,
-    papel papel_membro NOT NULL DEFAULT 'MEMBRO',
-    data_entrada TIMESTAMP NOT NULL DEFAULT now(),
-    silenciado_ate TIMESTAMP,
-    UNIQUE (grupo_id, usuario_id)
+CREATE TABLE group_members (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    group_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    role member_role NOT NULL DEFAULT 'MEMBER',
+    muted_until TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    UNIQUE (group_id, user_id)
 );
 
-CREATE TABLE solicitacao_grupo (
-    id BIGSERIAL PRIMARY KEY,
-    grupo_id BIGINT NOT NULL,
-    usuario_id BIGINT NOT NULL,
-    avaliado_por_id BIGINT,
-    status status_solicitacao NOT NULL DEFAULT 'PENDENTE',
-    data_solicitacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_avaliacao TIMESTAMP
+CREATE TABLE group_join_requests (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    group_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    reviewed_by_id UUID,
+    status request_status NOT NULL DEFAULT 'PENDING',
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE mensagem_grupo (
-    id BIGSERIAL PRIMARY KEY,
-    grupo_id BIGINT NOT NULL,
-    autor_id BIGINT NOT NULL,
-    mensagem_respondida_id BIGINT,
-    carta_id BIGINT,
-    anuncio_id BIGINT,
-    tipo_conteudo tipo_conteudo_msg NOT NULL DEFAULT 'TEXTO',
-    conteudo TEXT,
-    anexo_url VARCHAR(255),
-    fixada BOOLEAN NOT NULL DEFAULT false,
-    data_envio TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE group_messages (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    group_id UUID NOT NULL,
+    author_id UUID NOT NULL,
+    reply_to_id UUID,
+    card_id UUID,
+    listing_id UUID,
+    content_type message_content_type NOT NULL DEFAULT 'TEXT',
+    content TEXT,
+    attachment_url VARCHAR(255),
+    pinned BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE enquete (
-    id BIGSERIAL PRIMARY KEY,
-    mensagem_grupo_id BIGINT NOT NULL UNIQUE,
-    pergunta VARCHAR(255) NOT NULL,
-    multipla_escolha BOOLEAN NOT NULL DEFAULT false,
-    encerra_em TIMESTAMP
+CREATE TABLE polls (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    group_message_id UUID NOT NULL UNIQUE,
+    question VARCHAR(255) NOT NULL,
+    multiple_choice BOOLEAN NOT NULL DEFAULT false,
+    closes_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE opcao_enquete (
-    id BIGSERIAL PRIMARY KEY,
-    enquete_id BIGINT NOT NULL,
-    texto VARCHAR(160) NOT NULL
+CREATE TABLE poll_options (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    poll_id UUID NOT NULL,
+    text VARCHAR(160) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE voto_enquete (
-    opcao_enquete_id BIGINT NOT NULL,
-    usuario_id BIGINT NOT NULL,
-    data_voto TIMESTAMP NOT NULL DEFAULT now(),
-    PRIMARY KEY (opcao_enquete_id, usuario_id)
+CREATE TABLE poll_votes (
+    poll_option_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    PRIMARY KEY (poll_option_id, user_id)
 );
 
 -- ===== 5 - CHAT PESSOAL =====
 
-CREATE TABLE conversa (
-    id BIGSERIAL PRIMARY KEY,
-    anuncio_id BIGINT,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE conversations (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    listing_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE participante_conversa (
-    conversa_id BIGINT NOT NULL,
-    usuario_id BIGINT NOT NULL,
-    data_entrada TIMESTAMP NOT NULL DEFAULT now(),
-    PRIMARY KEY (conversa_id, usuario_id)
+CREATE TABLE conversation_participants (
+    conversation_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    PRIMARY KEY (conversation_id, user_id)
 );
 
-CREATE TABLE mensagem (
-    id BIGSERIAL PRIMARY KEY,
-    conversa_id BIGINT NOT NULL,
-    autor_id BIGINT NOT NULL,
-    mensagem_respondida_id BIGINT,
-    conteudo TEXT,
-    anexo_url VARCHAR(255),
-    lida BOOLEAN NOT NULL DEFAULT false,
-    data_leitura TIMESTAMP,
-    data_envio TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    conversation_id UUID NOT NULL,
+    author_id UUID NOT NULL,
+    reply_to_id UUID,
+    content TEXT,
+    attachment_url VARCHAR(255),
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    read_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE bloqueio_usuario (
-    id BIGSERIAL PRIMARY KEY,
-    bloqueador_id BIGINT NOT NULL,
-    bloqueado_id BIGINT NOT NULL,
-    data_bloqueio TIMESTAMP NOT NULL DEFAULT now(),
-    UNIQUE (bloqueador_id, bloqueado_id)
+CREATE TABLE user_blocks (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    blocker_id UUID NOT NULL,
+    blocked_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    UNIQUE (blocker_id, blocked_id)
 );
 
 -- ===== 6 - MARKETPLACE (ANUNCIOS, PEDIDOS, AVALIACOES) =====
 
-CREATE TABLE anuncio (
-    id BIGSERIAL PRIMARY KEY,
-    vendedor_id BIGINT NOT NULL,
-    carta_id BIGINT NOT NULL,
-    estado_conservacao_id BIGINT,
-    preco NUMERIC(10,2) NOT NULL,
-    quantidade_disponivel INTEGER NOT NULL DEFAULT 1,
-    descricao TEXT,
-    status status_anuncio NOT NULL DEFAULT 'ATIVO',
-    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE listings (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    seller_id UUID NOT NULL,
+    card_id UUID NOT NULL,
+    condition_id UUID,
+    price NUMERIC(10,2) NOT NULL,
+    available_quantity INTEGER NOT NULL DEFAULT 1,
+    description TEXT,
+    status listing_status NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE foto_anuncio (
-    id BIGSERIAL PRIMARY KEY,
-    anuncio_id BIGINT NOT NULL,
+CREATE TABLE listing_photos (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    listing_id UUID NOT NULL,
     url VARCHAR(255) NOT NULL,
-    ordem SMALLINT NOT NULL DEFAULT 0
+    sort_order SMALLINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE proposta (
-    id BIGSERIAL PRIMARY KEY,
-    anuncio_id BIGINT NOT NULL,
-    comprador_id BIGINT NOT NULL,
-    valor_ofertado NUMERIC(10,2) NOT NULL,
-    mensagem VARCHAR(255),
-    status status_proposta NOT NULL DEFAULT 'PENDENTE',
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE offers (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    listing_id UUID NOT NULL,
+    buyer_id UUID NOT NULL,
+    offered_amount NUMERIC(10,2) NOT NULL,
+    message VARCHAR(255),
+    status offer_status NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE pedido (
-    id BIGSERIAL PRIMARY KEY,
-    anuncio_id BIGINT NOT NULL,
-    comprador_id BIGINT NOT NULL,
-    vendedor_id BIGINT NOT NULL,
-    endereco_entrega_id BIGINT NOT NULL,
-    quantidade INTEGER NOT NULL DEFAULT 1,
-    valor_itens NUMERIC(10,2) NOT NULL,
-    valor_frete NUMERIC(10,2) NOT NULL DEFAULT 0,
-    valor_total NUMERIC(10,2) NOT NULL,
-    forma_envio VARCHAR(60) NOT NULL,
-    status status_pedido NOT NULL DEFAULT 'AGUARDANDO_PAGAMENTO',
-    data_pedido TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    listing_id UUID NOT NULL,
+    buyer_id UUID NOT NULL,
+    seller_id UUID NOT NULL,
+    shipping_address_id UUID NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    items_amount NUMERIC(10,2) NOT NULL,
+    shipping_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(10,2) NOT NULL,
+    shipping_method VARCHAR(60) NOT NULL,
+    status order_status NOT NULL DEFAULT 'AWAITING_PAYMENT',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE pagamento (
-    id BIGSERIAL PRIMARY KEY,
-    pedido_id BIGINT NOT NULL UNIQUE,
-    metodo metodo_pagamento NOT NULL,
-    valor NUMERIC(10,2) NOT NULL,
-    status status_pagamento NOT NULL DEFAULT 'PENDENTE',
-    gateway_referencia VARCHAR(120),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    order_id UUID NOT NULL UNIQUE,
+    method payment_method NOT NULL,
+    value NUMERIC(10,2) NOT NULL,
+    status payment_status NOT NULL DEFAULT 'PENDING',
+    gateway_reference VARCHAR(120),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE avaliacao (
-    id BIGSERIAL PRIMARY KEY,
-    pedido_id BIGINT NOT NULL UNIQUE,
-    autor_id BIGINT NOT NULL,
-    vendedor_id BIGINT NOT NULL,
-    nota SMALLINT NOT NULL,
-    comentario VARCHAR(500),
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE reviews (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    order_id UUID NOT NULL UNIQUE,
+    author_id UUID NOT NULL,
+    seller_id UUID NOT NULL,
+    rating SMALLINT NOT NULL,
+    comment VARCHAR(500),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- ===== 7 - NOTIFICACOES E FAVORITOS =====
 
-CREATE TABLE favorito (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL,
-    tipo tipo_favorito NOT NULL,
-    album_id BIGINT,
-    carta_id BIGINT,
-    grupo_id BIGINT,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE favorites (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
+    type favorite_type NOT NULL,
+    album_id UUID,
+    card_id UUID,
+    group_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE alerta_preco (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL,
-    carta_id BIGINT NOT NULL,
-    preco_alvo NUMERIC(10,2) NOT NULL,
-    ativo BOOLEAN NOT NULL DEFAULT true,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE price_alerts (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
+    card_id UUID NOT NULL,
+    target_price NUMERIC(10,2) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE notificacao_global (
-    id BIGSERIAL PRIMARY KEY,
-    admin_id BIGINT NOT NULL,
-    titulo VARCHAR(120) NOT NULL,
-    conteudo VARCHAR(500) NOT NULL,
-    total_destinatarios INTEGER NOT NULL DEFAULT 0,
-    data_disparo TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE global_notifications (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    admin_id UUID NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    content VARCHAR(500) NOT NULL,
+    recipient_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE notificacao (
-    id BIGSERIAL PRIMARY KEY,
-    usuario_id BIGINT NOT NULL,
-    notificacao_global_id BIGINT,
-    titulo VARCHAR(120) NOT NULL,
-    mensagem VARCHAR(500) NOT NULL,
-    tipo VARCHAR(40) NOT NULL,
-    link_referencia VARCHAR(255),
-    lida BOOLEAN NOT NULL DEFAULT false,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    user_id UUID NOT NULL,
+    global_notification_id UUID,
+    title VARCHAR(120) NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    type VARCHAR(40) NOT NULL,
+    reference_link VARCHAR(255),
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- ===== 8 - MODERACAO E ADMINISTRACAO =====
 
-CREATE TABLE denuncia (
-    id BIGSERIAL PRIMARY KEY,
-    denunciante_id BIGINT NOT NULL,
-    moderador_id BIGINT,
-    anuncio_id BIGINT,
-    usuario_alvo_id BIGINT,
-    mensagem_grupo_id BIGINT,
-    tipo_alvo tipo_alvo_denuncia NOT NULL,
-    motivo VARCHAR(90) NOT NULL,
-    descricao VARCHAR(500),
-    status status_denuncia NOT NULL DEFAULT 'PENDENTE',
-    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_resolucao TIMESTAMP
+CREATE TABLE reports (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    reporter_id UUID NOT NULL,
+    moderator_id UUID,
+    listing_id UUID,
+    target_user_id UUID,
+    group_message_id UUID,
+    target_type report_target_type NOT NULL,
+    reason VARCHAR(90) NOT NULL,
+    description VARCHAR(500),
+    status report_status NOT NULL DEFAULT 'PENDING',
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE solicitacao_cadastro (
-    id BIGSERIAL PRIMARY KEY,
-    solicitante_id BIGINT NOT NULL,
-    avaliado_por_id BIGINT,
-    carta_id BIGINT,
-    album_id BIGINT,
-    tipo tipo_solic_cadastro NOT NULL,
-    dados JSONB NOT NULL,
-    status status_solicitacao NOT NULL DEFAULT 'PENDENTE',
-    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_avaliacao TIMESTAMP
+CREATE TABLE catalog_requests (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    requester_id UUID NOT NULL,
+    reviewed_by_id UUID,
+    card_id UUID,
+    album_id UUID,
+    type catalog_request_type NOT NULL,
+    data JSONB NOT NULL,
+    status request_status NOT NULL DEFAULT 'PENDING',
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE log_auditoria (
-    id BIGSERIAL PRIMARY KEY,
-    admin_id BIGINT NOT NULL,
-    acao VARCHAR(90) NOT NULL,
-    entidade_afetada VARCHAR(60) NOT NULL,
-    entidade_id BIGINT,
-    detalhes JSONB,
-    data_registro TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    admin_id UUID NOT NULL,
+    action VARCHAR(90) NOT NULL,
+    entity_type VARCHAR(60) NOT NULL,
+    entity_id UUID,
+    details JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE configuracao_global (
-    id BIGSERIAL PRIMARY KEY,
-    atualizado_por_id BIGINT,
-    chave VARCHAR(90) NOT NULL UNIQUE,
-    valor TEXT NOT NULL,
-    descricao VARCHAR(255),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
+CREATE TABLE global_settings (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    updated_by_id UUID,
+    key VARCHAR(90) NOT NULL UNIQUE,
+    value TEXT NOT NULL,
+    description VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- ---------------------------------------------------------------------
 -- CHAVES ESTRANGEIRAS
 -- ---------------------------------------------------------------------
-ALTER TABLE perfil ADD CONSTRAINT fk_perfil_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE endereco ADD CONSTRAINT fk_endereco_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE token_recuperacao_senha ADD CONSTRAINT fk_token_recuperacao_senha_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE usuario_conquista ADD CONSTRAINT fk_usuario_conquista_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE usuario_conquista ADD CONSTRAINT fk_usuario_conquista_conquista_id FOREIGN KEY (conquista_id) REFERENCES conquista (id);
-ALTER TABLE assinatura ADD CONSTRAINT fk_assinatura_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE categoria ADD CONSTRAINT fk_categoria_categoria_pai_id FOREIGN KEY (categoria_pai_id) REFERENCES categoria (id);
-ALTER TABLE album ADD CONSTRAINT fk_album_categoria_id FOREIGN KEY (categoria_id) REFERENCES categoria (id);
-ALTER TABLE carta ADD CONSTRAINT fk_carta_album_id FOREIGN KEY (album_id) REFERENCES album (id);
-ALTER TABLE carta ADD CONSTRAINT fk_carta_categoria_id FOREIGN KEY (categoria_id) REFERENCES categoria (id);
-ALTER TABLE carta ADD CONSTRAINT fk_carta_raridade_id FOREIGN KEY (raridade_id) REFERENCES raridade (id);
-ALTER TABLE carta ADD CONSTRAINT fk_carta_idioma_id FOREIGN KEY (idioma_id) REFERENCES idioma (id);
-ALTER TABLE foto_carta ADD CONSTRAINT fk_foto_carta_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE historico_preco ADD CONSTRAINT fk_historico_preco_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE colecao ADD CONSTRAINT fk_colecao_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE album_usuario ADD CONSTRAINT fk_album_usuario_colecao_id FOREIGN KEY (colecao_id) REFERENCES colecao (id);
-ALTER TABLE album_usuario ADD CONSTRAINT fk_album_usuario_album_id FOREIGN KEY (album_id) REFERENCES album (id);
-ALTER TABLE colecao_carta ADD CONSTRAINT fk_colecao_carta_colecao_id FOREIGN KEY (colecao_id) REFERENCES colecao (id);
-ALTER TABLE colecao_carta ADD CONSTRAINT fk_colecao_carta_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE grupo ADD CONSTRAINT fk_grupo_criador_id FOREIGN KEY (criador_id) REFERENCES usuario (id);
-ALTER TABLE membro_grupo ADD CONSTRAINT fk_membro_grupo_grupo_id FOREIGN KEY (grupo_id) REFERENCES grupo (id);
-ALTER TABLE membro_grupo ADD CONSTRAINT fk_membro_grupo_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE solicitacao_grupo ADD CONSTRAINT fk_solicitacao_grupo_grupo_id FOREIGN KEY (grupo_id) REFERENCES grupo (id);
-ALTER TABLE solicitacao_grupo ADD CONSTRAINT fk_solicitacao_grupo_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE solicitacao_grupo ADD CONSTRAINT fk_solicitacao_grupo_avaliado_por_id FOREIGN KEY (avaliado_por_id) REFERENCES usuario (id);
-ALTER TABLE mensagem_grupo ADD CONSTRAINT fk_mensagem_grupo_grupo_id FOREIGN KEY (grupo_id) REFERENCES grupo (id);
-ALTER TABLE mensagem_grupo ADD CONSTRAINT fk_mensagem_grupo_autor_id FOREIGN KEY (autor_id) REFERENCES usuario (id);
-ALTER TABLE mensagem_grupo ADD CONSTRAINT fk_mensagem_grupo_mensagem_respondida_id FOREIGN KEY (mensagem_respondida_id) REFERENCES mensagem_grupo (id);
-ALTER TABLE mensagem_grupo ADD CONSTRAINT fk_mensagem_grupo_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE mensagem_grupo ADD CONSTRAINT fk_mensagem_grupo_anuncio_id FOREIGN KEY (anuncio_id) REFERENCES anuncio (id);
-ALTER TABLE enquete ADD CONSTRAINT fk_enquete_mensagem_grupo_id FOREIGN KEY (mensagem_grupo_id) REFERENCES mensagem_grupo (id);
-ALTER TABLE opcao_enquete ADD CONSTRAINT fk_opcao_enquete_enquete_id FOREIGN KEY (enquete_id) REFERENCES enquete (id);
-ALTER TABLE voto_enquete ADD CONSTRAINT fk_voto_enquete_opcao_enquete_id FOREIGN KEY (opcao_enquete_id) REFERENCES opcao_enquete (id);
-ALTER TABLE voto_enquete ADD CONSTRAINT fk_voto_enquete_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE participante_conversa ADD CONSTRAINT fk_participante_conversa_conversa_id FOREIGN KEY (conversa_id) REFERENCES conversa (id);
-ALTER TABLE participante_conversa ADD CONSTRAINT fk_participante_conversa_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE mensagem ADD CONSTRAINT fk_mensagem_conversa_id FOREIGN KEY (conversa_id) REFERENCES conversa (id);
-ALTER TABLE mensagem ADD CONSTRAINT fk_mensagem_autor_id FOREIGN KEY (autor_id) REFERENCES usuario (id);
-ALTER TABLE mensagem ADD CONSTRAINT fk_mensagem_mensagem_respondida_id FOREIGN KEY (mensagem_respondida_id) REFERENCES mensagem (id);
-ALTER TABLE conversa ADD CONSTRAINT fk_conversa_anuncio_id FOREIGN KEY (anuncio_id) REFERENCES anuncio (id);
-ALTER TABLE bloqueio_usuario ADD CONSTRAINT fk_bloqueio_usuario_bloqueador_id FOREIGN KEY (bloqueador_id) REFERENCES usuario (id);
-ALTER TABLE bloqueio_usuario ADD CONSTRAINT fk_bloqueio_usuario_bloqueado_id FOREIGN KEY (bloqueado_id) REFERENCES usuario (id);
-ALTER TABLE anuncio ADD CONSTRAINT fk_anuncio_vendedor_id FOREIGN KEY (vendedor_id) REFERENCES usuario (id);
-ALTER TABLE anuncio ADD CONSTRAINT fk_anuncio_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE anuncio ADD CONSTRAINT fk_anuncio_estado_conservacao_id FOREIGN KEY (estado_conservacao_id) REFERENCES estado_conservacao (id);
-ALTER TABLE foto_anuncio ADD CONSTRAINT fk_foto_anuncio_anuncio_id FOREIGN KEY (anuncio_id) REFERENCES anuncio (id);
-ALTER TABLE proposta ADD CONSTRAINT fk_proposta_anuncio_id FOREIGN KEY (anuncio_id) REFERENCES anuncio (id);
-ALTER TABLE proposta ADD CONSTRAINT fk_proposta_comprador_id FOREIGN KEY (comprador_id) REFERENCES usuario (id);
-ALTER TABLE pedido ADD CONSTRAINT fk_pedido_anuncio_id FOREIGN KEY (anuncio_id) REFERENCES anuncio (id);
-ALTER TABLE pedido ADD CONSTRAINT fk_pedido_comprador_id FOREIGN KEY (comprador_id) REFERENCES usuario (id);
-ALTER TABLE pedido ADD CONSTRAINT fk_pedido_vendedor_id FOREIGN KEY (vendedor_id) REFERENCES usuario (id);
-ALTER TABLE pedido ADD CONSTRAINT fk_pedido_endereco_entrega_id FOREIGN KEY (endereco_entrega_id) REFERENCES endereco (id);
-ALTER TABLE pagamento ADD CONSTRAINT fk_pagamento_pedido_id FOREIGN KEY (pedido_id) REFERENCES pedido (id);
-ALTER TABLE avaliacao ADD CONSTRAINT fk_avaliacao_pedido_id FOREIGN KEY (pedido_id) REFERENCES pedido (id);
-ALTER TABLE avaliacao ADD CONSTRAINT fk_avaliacao_autor_id FOREIGN KEY (autor_id) REFERENCES usuario (id);
-ALTER TABLE avaliacao ADD CONSTRAINT fk_avaliacao_vendedor_id FOREIGN KEY (vendedor_id) REFERENCES usuario (id);
-ALTER TABLE favorito ADD CONSTRAINT fk_favorito_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE favorito ADD CONSTRAINT fk_favorito_album_id FOREIGN KEY (album_id) REFERENCES album (id);
-ALTER TABLE favorito ADD CONSTRAINT fk_favorito_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE favorito ADD CONSTRAINT fk_favorito_grupo_id FOREIGN KEY (grupo_id) REFERENCES grupo (id);
-ALTER TABLE alerta_preco ADD CONSTRAINT fk_alerta_preco_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE alerta_preco ADD CONSTRAINT fk_alerta_preco_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE notificacao ADD CONSTRAINT fk_notificacao_usuario_id FOREIGN KEY (usuario_id) REFERENCES usuario (id);
-ALTER TABLE notificacao ADD CONSTRAINT fk_notificacao_notificacao_global_id FOREIGN KEY (notificacao_global_id) REFERENCES notificacao_global (id);
-ALTER TABLE notificacao_global ADD CONSTRAINT fk_notificacao_global_admin_id FOREIGN KEY (admin_id) REFERENCES usuario (id);
-ALTER TABLE denuncia ADD CONSTRAINT fk_denuncia_denunciante_id FOREIGN KEY (denunciante_id) REFERENCES usuario (id);
-ALTER TABLE denuncia ADD CONSTRAINT fk_denuncia_moderador_id FOREIGN KEY (moderador_id) REFERENCES usuario (id);
-ALTER TABLE denuncia ADD CONSTRAINT fk_denuncia_anuncio_id FOREIGN KEY (anuncio_id) REFERENCES anuncio (id);
-ALTER TABLE denuncia ADD CONSTRAINT fk_denuncia_usuario_alvo_id FOREIGN KEY (usuario_alvo_id) REFERENCES usuario (id);
-ALTER TABLE denuncia ADD CONSTRAINT fk_denuncia_mensagem_grupo_id FOREIGN KEY (mensagem_grupo_id) REFERENCES mensagem_grupo (id);
-ALTER TABLE solicitacao_cadastro ADD CONSTRAINT fk_solicitacao_cadastro_solicitante_id FOREIGN KEY (solicitante_id) REFERENCES usuario (id);
-ALTER TABLE solicitacao_cadastro ADD CONSTRAINT fk_solicitacao_cadastro_avaliado_por_id FOREIGN KEY (avaliado_por_id) REFERENCES usuario (id);
-ALTER TABLE solicitacao_cadastro ADD CONSTRAINT fk_solicitacao_cadastro_carta_id FOREIGN KEY (carta_id) REFERENCES carta (id);
-ALTER TABLE solicitacao_cadastro ADD CONSTRAINT fk_solicitacao_cadastro_album_id FOREIGN KEY (album_id) REFERENCES album (id);
-ALTER TABLE log_auditoria ADD CONSTRAINT fk_log_auditoria_admin_id FOREIGN KEY (admin_id) REFERENCES usuario (id);
-ALTER TABLE configuracao_global ADD CONSTRAINT fk_configuracao_global_atualizado_por_id FOREIGN KEY (atualizado_por_id) REFERENCES usuario (id);
+ALTER TABLE profiles ADD CONSTRAINT fk_profiles_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE addresses ADD CONSTRAINT fk_addresses_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE password_reset_tokens ADD CONSTRAINT fk_password_reset_tokens_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE refresh_tokens ADD CONSTRAINT fk_refresh_tokens_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE user_achievements ADD CONSTRAINT fk_user_achievements_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE user_achievements ADD CONSTRAINT fk_user_achievements_achievement_id FOREIGN KEY (achievement_id) REFERENCES achievements (id);
+ALTER TABLE subscriptions ADD CONSTRAINT fk_subscriptions_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE categories ADD CONSTRAINT fk_categories_parent_category_id FOREIGN KEY (parent_category_id) REFERENCES categories (id);
+ALTER TABLE albums ADD CONSTRAINT fk_albums_category_id FOREIGN KEY (category_id) REFERENCES categories (id);
+ALTER TABLE cards ADD CONSTRAINT fk_cards_album_id FOREIGN KEY (album_id) REFERENCES albums (id);
+ALTER TABLE cards ADD CONSTRAINT fk_cards_category_id FOREIGN KEY (category_id) REFERENCES categories (id);
+ALTER TABLE cards ADD CONSTRAINT fk_cards_rarity_id FOREIGN KEY (rarity_id) REFERENCES rarities (id);
+ALTER TABLE cards ADD CONSTRAINT fk_cards_language_id FOREIGN KEY (language_id) REFERENCES languages (id);
+ALTER TABLE card_photos ADD CONSTRAINT fk_card_photos_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE price_history ADD CONSTRAINT fk_price_history_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE collections ADD CONSTRAINT fk_collections_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE user_albums ADD CONSTRAINT fk_user_albums_collection_id FOREIGN KEY (collection_id) REFERENCES collections (id);
+ALTER TABLE user_albums ADD CONSTRAINT fk_user_albums_album_id FOREIGN KEY (album_id) REFERENCES albums (id);
+ALTER TABLE collection_cards ADD CONSTRAINT fk_collection_cards_collection_id FOREIGN KEY (collection_id) REFERENCES collections (id);
+ALTER TABLE collection_cards ADD CONSTRAINT fk_collection_cards_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE groups ADD CONSTRAINT fk_groups_creator_id FOREIGN KEY (creator_id) REFERENCES users (id);
+ALTER TABLE group_members ADD CONSTRAINT fk_group_members_group_id FOREIGN KEY (group_id) REFERENCES groups (id);
+ALTER TABLE group_members ADD CONSTRAINT fk_group_members_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE group_join_requests ADD CONSTRAINT fk_group_join_requests_group_id FOREIGN KEY (group_id) REFERENCES groups (id);
+ALTER TABLE group_join_requests ADD CONSTRAINT fk_group_join_requests_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE group_join_requests ADD CONSTRAINT fk_group_join_requests_reviewed_by_id FOREIGN KEY (reviewed_by_id) REFERENCES users (id);
+ALTER TABLE group_messages ADD CONSTRAINT fk_group_messages_group_id FOREIGN KEY (group_id) REFERENCES groups (id);
+ALTER TABLE group_messages ADD CONSTRAINT fk_group_messages_author_id FOREIGN KEY (author_id) REFERENCES users (id);
+ALTER TABLE group_messages ADD CONSTRAINT fk_group_messages_reply_to_id FOREIGN KEY (reply_to_id) REFERENCES group_messages (id);
+ALTER TABLE group_messages ADD CONSTRAINT fk_group_messages_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE group_messages ADD CONSTRAINT fk_group_messages_listing_id FOREIGN KEY (listing_id) REFERENCES listings (id);
+ALTER TABLE polls ADD CONSTRAINT fk_polls_group_message_id FOREIGN KEY (group_message_id) REFERENCES group_messages (id);
+ALTER TABLE poll_options ADD CONSTRAINT fk_poll_options_poll_id FOREIGN KEY (poll_id) REFERENCES polls (id);
+ALTER TABLE poll_votes ADD CONSTRAINT fk_poll_votes_poll_option_id FOREIGN KEY (poll_option_id) REFERENCES poll_options (id);
+ALTER TABLE poll_votes ADD CONSTRAINT fk_poll_votes_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE conversation_participants ADD CONSTRAINT fk_conversation_participants_conversation_id FOREIGN KEY (conversation_id) REFERENCES conversations (id);
+ALTER TABLE conversation_participants ADD CONSTRAINT fk_conversation_participants_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE messages ADD CONSTRAINT fk_messages_conversation_id FOREIGN KEY (conversation_id) REFERENCES conversations (id);
+ALTER TABLE messages ADD CONSTRAINT fk_messages_author_id FOREIGN KEY (author_id) REFERENCES users (id);
+ALTER TABLE messages ADD CONSTRAINT fk_messages_reply_to_id FOREIGN KEY (reply_to_id) REFERENCES messages (id);
+ALTER TABLE conversations ADD CONSTRAINT fk_conversations_listing_id FOREIGN KEY (listing_id) REFERENCES listings (id);
+ALTER TABLE user_blocks ADD CONSTRAINT fk_user_blocks_blocker_id FOREIGN KEY (blocker_id) REFERENCES users (id);
+ALTER TABLE user_blocks ADD CONSTRAINT fk_user_blocks_blocked_id FOREIGN KEY (blocked_id) REFERENCES users (id);
+ALTER TABLE listings ADD CONSTRAINT fk_listings_seller_id FOREIGN KEY (seller_id) REFERENCES users (id);
+ALTER TABLE listings ADD CONSTRAINT fk_listings_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE listings ADD CONSTRAINT fk_listings_condition_id FOREIGN KEY (condition_id) REFERENCES card_conditions (id);
+ALTER TABLE listing_photos ADD CONSTRAINT fk_listing_photos_listing_id FOREIGN KEY (listing_id) REFERENCES listings (id);
+ALTER TABLE offers ADD CONSTRAINT fk_offers_listing_id FOREIGN KEY (listing_id) REFERENCES listings (id);
+ALTER TABLE offers ADD CONSTRAINT fk_offers_buyer_id FOREIGN KEY (buyer_id) REFERENCES users (id);
+ALTER TABLE orders ADD CONSTRAINT fk_orders_listing_id FOREIGN KEY (listing_id) REFERENCES listings (id);
+ALTER TABLE orders ADD CONSTRAINT fk_orders_buyer_id FOREIGN KEY (buyer_id) REFERENCES users (id);
+ALTER TABLE orders ADD CONSTRAINT fk_orders_seller_id FOREIGN KEY (seller_id) REFERENCES users (id);
+ALTER TABLE orders ADD CONSTRAINT fk_orders_shipping_address_id FOREIGN KEY (shipping_address_id) REFERENCES addresses (id);
+ALTER TABLE payments ADD CONSTRAINT fk_payments_order_id FOREIGN KEY (order_id) REFERENCES orders (id);
+ALTER TABLE reviews ADD CONSTRAINT fk_reviews_order_id FOREIGN KEY (order_id) REFERENCES orders (id);
+ALTER TABLE reviews ADD CONSTRAINT fk_reviews_author_id FOREIGN KEY (author_id) REFERENCES users (id);
+ALTER TABLE reviews ADD CONSTRAINT fk_reviews_seller_id FOREIGN KEY (seller_id) REFERENCES users (id);
+ALTER TABLE favorites ADD CONSTRAINT fk_favorites_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE favorites ADD CONSTRAINT fk_favorites_album_id FOREIGN KEY (album_id) REFERENCES albums (id);
+ALTER TABLE favorites ADD CONSTRAINT fk_favorites_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE favorites ADD CONSTRAINT fk_favorites_group_id FOREIGN KEY (group_id) REFERENCES groups (id);
+ALTER TABLE price_alerts ADD CONSTRAINT fk_price_alerts_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE price_alerts ADD CONSTRAINT fk_price_alerts_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE notifications ADD CONSTRAINT fk_notifications_user_id FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE notifications ADD CONSTRAINT fk_notifications_global_notification_id FOREIGN KEY (global_notification_id) REFERENCES global_notifications (id);
+ALTER TABLE global_notifications ADD CONSTRAINT fk_global_notifications_admin_id FOREIGN KEY (admin_id) REFERENCES users (id);
+ALTER TABLE reports ADD CONSTRAINT fk_reports_reporter_id FOREIGN KEY (reporter_id) REFERENCES users (id);
+ALTER TABLE reports ADD CONSTRAINT fk_reports_moderator_id FOREIGN KEY (moderator_id) REFERENCES users (id);
+ALTER TABLE reports ADD CONSTRAINT fk_reports_listing_id FOREIGN KEY (listing_id) REFERENCES listings (id);
+ALTER TABLE reports ADD CONSTRAINT fk_reports_target_user_id FOREIGN KEY (target_user_id) REFERENCES users (id);
+ALTER TABLE reports ADD CONSTRAINT fk_reports_group_message_id FOREIGN KEY (group_message_id) REFERENCES group_messages (id);
+ALTER TABLE catalog_requests ADD CONSTRAINT fk_catalog_requests_requester_id FOREIGN KEY (requester_id) REFERENCES users (id);
+ALTER TABLE catalog_requests ADD CONSTRAINT fk_catalog_requests_reviewed_by_id FOREIGN KEY (reviewed_by_id) REFERENCES users (id);
+ALTER TABLE catalog_requests ADD CONSTRAINT fk_catalog_requests_card_id FOREIGN KEY (card_id) REFERENCES cards (id);
+ALTER TABLE catalog_requests ADD CONSTRAINT fk_catalog_requests_album_id FOREIGN KEY (album_id) REFERENCES albums (id);
+ALTER TABLE audit_logs ADD CONSTRAINT fk_audit_logs_admin_id FOREIGN KEY (admin_id) REFERENCES users (id);
+ALTER TABLE global_settings ADD CONSTRAINT fk_global_settings_updated_by_id FOREIGN KEY (updated_by_id) REFERENCES users (id);
 

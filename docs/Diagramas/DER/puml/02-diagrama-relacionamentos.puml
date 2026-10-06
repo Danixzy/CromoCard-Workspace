@@ -8,8 +8,8 @@
 '     (~1900 x 3100) em vez de uma tira de 4500 x 1350. A tira nao
 '     cabia legivel na pagina e ainda estourava o limite de 4096px
 '     do servidor, cortando entidades do lado direito.
-'  2) SEM caixas de "package": a entidade "usuario" se liga a 25 das
-'     76 relacoes. Com caixas, o layout tem de cruzar todas elas e o
+'  2) SEM caixas de "package": a entidade "users" se liga a 26 das
+'     77 relacoes. Com caixas, o layout tem de cruzar todas elas e o
 '     desenho vira um emaranhado. Aqui o modulo e indicado pela COR
 '     de fundo da entidade (ver legenda).
 '  3) Rotulos apenas onde ha mais de uma ligacao entre o mesmo par.
@@ -68,221 +68,225 @@ endlegend
 ' =====================================================================
 
 ' --- 1. Usuarios, Perfil e Acesso ------------------------------------
-entity usuario #DCE7F7 {
+entity users #DCE7F7 {
   * id <<PK>>
 }
-entity perfil #DCE7F7 {
+entity profiles #DCE7F7 {
   * id <<PK>>
-  * usuario_id <<FK>>
+  * user_id <<FK>>
 }
-entity endereco #DCE7F7 {
+entity addresses #DCE7F7 {
   * id <<PK>>
-  * usuario_id <<FK>>
+  * user_id <<FK>>
 }
-entity token_recuperacao_senha #DCE7F7 {
+entity password_reset_tokens #DCE7F7 {
   * id <<PK>>
-  * usuario_id <<FK>>
+  * user_id <<FK>>
 }
-entity conquista #DCE7F7 {
+entity refresh_tokens #DCE7F7 {
+  * id <<PK>>
+  * user_id <<FK>>
+}
+entity achievements #DCE7F7 {
   * id <<PK>>
 }
-entity usuario_conquista #DCE7F7 {
-  * usuario_id <<PK, FK>>
-  * conquista_id <<PK, FK>>
+entity user_achievements #DCE7F7 {
+  * user_id <<PK, FK>>
+  * achievement_id <<PK, FK>>
 }
-entity assinatura #DCE7F7 {
+entity subscriptions #DCE7F7 {
   * id <<PK>>
-  * usuario_id <<FK>>
+  * user_id <<FK>>
 }
 
 ' --- 2. Catalogo Global ----------------------------------------------
-entity categoria #DCEFE4 {
+entity categories #DCEFE4 {
   * id <<PK>>
-  o categoria_pai_id <<FK>>
+  o parent_category_id <<FK>>
 }
-entity raridade #DCEFE4 {
-  * id <<PK>>
-}
-entity idioma #DCEFE4 {
+entity rarities #DCEFE4 {
   * id <<PK>>
 }
-entity estado_conservacao #DCEFE4 {
+entity languages #DCEFE4 {
   * id <<PK>>
 }
-entity album #DCEFE4 {
+entity card_conditions #DCEFE4 {
   * id <<PK>>
-  o categoria_id <<FK>>
 }
-entity carta #DCEFE4 {
+entity albums #DCEFE4 {
+  * id <<PK>>
+  o category_id <<FK>>
+}
+entity cards #DCEFE4 {
   * id <<PK>>
   o album_id <<FK>>
-  o categoria_id <<FK>>
-  o raridade_id <<FK>>
-  o idioma_id <<FK>>
+  o category_id <<FK>>
+  o rarity_id <<FK>>
+  o language_id <<FK>>
 }
-entity foto_carta #DCEFE4 {
+entity card_photos #DCEFE4 {
   * id <<PK>>
-  * carta_id <<FK>>
+  * card_id <<FK>>
 }
-entity historico_preco #DCEFE4 {
+entity price_history #DCEFE4 {
   * id <<PK>>
-  * carta_id <<FK>>
+  * card_id <<FK>>
 }
 
 ' --- 3. Colecao do Cliente -------------------------------------------
-entity colecao #EBE0F5 {
+entity collections #EBE0F5 {
   * id <<PK>>
-  * usuario_id <<FK>>
+  * user_id <<FK>>
 }
-entity album_usuario #EBE0F5 {
+entity user_albums #EBE0F5 {
   * id <<PK>>
-  * colecao_id <<FK>>
+  * collection_id <<FK>>
   * album_id <<FK>>
 }
-entity colecao_carta #EBE0F5 {
+entity collection_cards #EBE0F5 {
   * id <<PK>>
-  * colecao_id <<FK>>
-  * carta_id <<FK>>
+  * collection_id <<FK>>
+  * card_id <<FK>>
 }
 
 ' --- 4. Comunidade (Grupos) ------------------------------------------
-entity grupo #FAE5D3 {
+entity groups #FAE5D3 {
   * id <<PK>>
-  * criador_id <<FK>>
+  * creator_id <<FK>>
 }
-entity membro_grupo #FAE5D3 {
+entity group_members #FAE5D3 {
   * id <<PK>>
-  * grupo_id <<FK>>
-  * usuario_id <<FK>>
+  * group_id <<FK>>
+  * user_id <<FK>>
 }
-entity solicitacao_grupo #FAE5D3 {
+entity group_join_requests #FAE5D3 {
   * id <<PK>>
-  * grupo_id <<FK>>
-  * usuario_id <<FK>>
-  o avaliado_por_id <<FK>>
+  * group_id <<FK>>
+  * user_id <<FK>>
+  o reviewed_by_id <<FK>>
 }
-entity mensagem_grupo #FAE5D3 {
+entity group_messages #FAE5D3 {
   * id <<PK>>
-  * grupo_id <<FK>>
-  * autor_id <<FK>>
-  o mensagem_respondida_id <<FK>>
-  o carta_id <<FK>>
-  o anuncio_id <<FK>>
+  * group_id <<FK>>
+  * author_id <<FK>>
+  o reply_to_id <<FK>>
+  o card_id <<FK>>
+  o listing_id <<FK>>
 }
-entity enquete #FAE5D3 {
+entity polls #FAE5D3 {
   * id <<PK>>
-  * mensagem_grupo_id <<FK>>
+  * group_message_id <<FK>>
 }
-entity opcao_enquete #FAE5D3 {
+entity poll_options #FAE5D3 {
   * id <<PK>>
-  * enquete_id <<FK>>
+  * poll_id <<FK>>
 }
-entity voto_enquete #FAE5D3 {
-  * opcao_enquete_id <<PK, FK>>
-  * usuario_id <<PK, FK>>
+entity poll_votes #FAE5D3 {
+  * poll_option_id <<PK, FK>>
+  * user_id <<PK, FK>>
 }
 
 ' --- 5. Chat Pessoal --------------------------------------------------
-entity conversa #D9EDF2 {
+entity conversations #D9EDF2 {
   * id <<PK>>
-  o anuncio_id <<FK>>
+  o listing_id <<FK>>
 }
-entity participante_conversa #D9EDF2 {
-  * conversa_id <<PK, FK>>
-  * usuario_id <<PK, FK>>
+entity conversation_participants #D9EDF2 {
+  * conversation_id <<PK, FK>>
+  * user_id <<PK, FK>>
 }
-entity mensagem #D9EDF2 {
+entity messages #D9EDF2 {
   * id <<PK>>
-  * conversa_id <<FK>>
-  * autor_id <<FK>>
-  o mensagem_respondida_id <<FK>>
+  * conversation_id <<FK>>
+  * author_id <<FK>>
+  o reply_to_id <<FK>>
 }
-entity bloqueio_usuario #D9EDF2 {
+entity user_blocks #D9EDF2 {
   * id <<PK>>
-  * bloqueador_id <<FK>>
-  * bloqueado_id <<FK>>
+  * blocker_id <<FK>>
+  * blocked_id <<FK>>
 }
 
 ' --- 6. Marketplace ---------------------------------------------------
-entity anuncio #F8DFE7 {
+entity listings #F8DFE7 {
   * id <<PK>>
-  * vendedor_id <<FK>>
-  * carta_id <<FK>>
-  o estado_conservacao_id <<FK>>
+  * seller_id <<FK>>
+  * card_id <<FK>>
+  o condition_id <<FK>>
 }
-entity foto_anuncio #F8DFE7 {
+entity listing_photos #F8DFE7 {
   * id <<PK>>
-  * anuncio_id <<FK>>
+  * listing_id <<FK>>
 }
-entity proposta #F8DFE7 {
+entity offers #F8DFE7 {
   * id <<PK>>
-  * anuncio_id <<FK>>
-  * comprador_id <<FK>>
+  * listing_id <<FK>>
+  * buyer_id <<FK>>
 }
-entity pedido #F8DFE7 {
+entity orders #F8DFE7 {
   * id <<PK>>
-  * anuncio_id <<FK>>
-  * comprador_id <<FK>>
-  * vendedor_id <<FK>>
-  * endereco_entrega_id <<FK>>
+  * listing_id <<FK>>
+  * buyer_id <<FK>>
+  * seller_id <<FK>>
+  * shipping_address_id <<FK>>
 }
-entity pagamento #F8DFE7 {
+entity payments #F8DFE7 {
   * id <<PK>>
-  * pedido_id <<FK>>
+  * order_id <<FK>>
 }
-entity avaliacao #F8DFE7 {
+entity reviews #F8DFE7 {
   * id <<PK>>
-  * pedido_id <<FK>>
-  * autor_id <<FK>>
-  * vendedor_id <<FK>>
+  * order_id <<FK>>
+  * author_id <<FK>>
+  * seller_id <<FK>>
 }
 
 ' --- 7. Notificacoes e Favoritos --------------------------------------
-entity favorito #FBF0D0 {
+entity favorites #FBF0D0 {
   * id <<PK>>
-  * usuario_id <<FK>>
+  * user_id <<FK>>
   o album_id <<FK>>
-  o carta_id <<FK>>
-  o grupo_id <<FK>>
+  o card_id <<FK>>
+  o group_id <<FK>>
 }
-entity alerta_preco #FBF0D0 {
+entity price_alerts #FBF0D0 {
   * id <<PK>>
-  * usuario_id <<FK>>
-  * carta_id <<FK>>
+  * user_id <<FK>>
+  * card_id <<FK>>
 }
-entity notificacao_global #FBF0D0 {
+entity global_notifications #FBF0D0 {
   * id <<PK>>
   * admin_id <<FK>>
 }
-entity notificacao #FBF0D0 {
+entity notifications #FBF0D0 {
   * id <<PK>>
-  * usuario_id <<FK>>
-  o notificacao_global_id <<FK>>
+  * user_id <<FK>>
+  o global_notification_id <<FK>>
 }
 
 ' --- 8. Moderacao e Administracao -------------------------------------
-entity denuncia #E6E6EA {
+entity reports #E6E6EA {
   * id <<PK>>
-  * denunciante_id <<FK>>
-  o moderador_id <<FK>>
-  o anuncio_id <<FK>>
-  o usuario_alvo_id <<FK>>
-  o mensagem_grupo_id <<FK>>
+  * reporter_id <<FK>>
+  o moderator_id <<FK>>
+  o listing_id <<FK>>
+  o target_user_id <<FK>>
+  o group_message_id <<FK>>
 }
-entity solicitacao_cadastro #E6E6EA {
+entity catalog_requests #E6E6EA {
   * id <<PK>>
-  * solicitante_id <<FK>>
-  o avaliado_por_id <<FK>>
-  o carta_id <<FK>>
+  * requester_id <<FK>>
+  o reviewed_by_id <<FK>>
+  o card_id <<FK>>
   o album_id <<FK>>
 }
-entity log_auditoria #E6E6EA {
+entity audit_logs #E6E6EA {
   * id <<PK>>
   * admin_id <<FK>>
 }
-entity configuracao_global #E6E6EA {
+entity global_settings #E6E6EA {
   * id <<PK>>
-  o atualizado_por_id <<FK>>
+  o updated_by_id <<FK>>
 }
 
 ' =====================================================================
@@ -293,95 +297,96 @@ entity configuracao_global #E6E6EA {
 ' =====================================================================
 
 ' --- 1. Usuarios, Perfil e Acesso ------------------------------------
-usuario   ||--|| perfil
-usuario   ||--o{ endereco
-usuario   ||--o{ token_recuperacao_senha
-usuario   ||--o{ usuario_conquista
-conquista ||--o{ usuario_conquista
-usuario   ||--o{ assinatura
+users   ||--|| profiles
+users   ||--o{ addresses
+users   ||--o{ password_reset_tokens
+users   ||--o{ refresh_tokens
+users   ||--o{ user_achievements
+achievements ||--o{ user_achievements
+users   ||--o{ subscriptions
 
 ' --- 2. Catalogo Global ----------------------------------------------
-categoria |o--o{ categoria : pai
-categoria ||--o{ album
-categoria ||--o{ carta
-raridade  ||--o{ carta
-idioma    ||--o{ carta
-album     ||--o{ carta
-carta     ||--o{ foto_carta
-carta     ||--o{ historico_preco
+categories |o--o{ categories : pai
+categories ||--o{ albums
+categories ||--o{ cards
+rarities  ||--o{ cards
+languages    ||--o{ cards
+albums     ||--o{ cards
+cards     ||--o{ card_photos
+cards     ||--o{ price_history
 
 ' --- 3. Colecao do Cliente -------------------------------------------
-usuario ||--|| colecao
-colecao ||--o{ album_usuario
-album   ||--o{ album_usuario
-colecao ||--o{ colecao_carta
-carta   ||--o{ colecao_carta
+users ||--|| collections
+collections ||--o{ user_albums
+albums   ||--o{ user_albums
+collections ||--o{ collection_cards
+cards   ||--o{ collection_cards
 
 ' --- 4. Comunidade (Grupos) ------------------------------------------
-usuario        ||--o{ grupo             : criador
-grupo          ||--|{ membro_grupo
-usuario        ||--o{ membro_grupo
-grupo          ||--o{ solicitacao_grupo
-usuario        ||--o{ solicitacao_grupo : solicitante
-usuario        |o--o{ solicitacao_grupo : avaliador
-grupo          ||--o{ mensagem_grupo
-usuario        ||--o{ mensagem_grupo    : autor
-mensagem_grupo |o--o{ mensagem_grupo    : resposta
-carta          |o--o{ mensagem_grupo
-anuncio        |o--o{ mensagem_grupo
-mensagem_grupo ||--|| enquete
-enquete        ||--|{ opcao_enquete
-opcao_enquete  ||--o{ voto_enquete
-usuario        ||--o{ voto_enquete
+users        ||--o{ groups             : criador
+groups          ||--|{ group_members
+users        ||--o{ group_members
+groups          ||--o{ group_join_requests
+users        ||--o{ group_join_requests : solicitante
+users        |o--o{ group_join_requests : avaliador
+groups          ||--o{ group_messages
+users        ||--o{ group_messages    : autor
+group_messages |o--o{ group_messages    : resposta
+cards          |o--o{ group_messages
+listings        |o--o{ group_messages
+group_messages ||--|| polls
+polls        ||--|{ poll_options
+poll_options  ||--o{ poll_votes
+users        ||--o{ poll_votes
 
 ' --- 5. Chat Pessoal --------------------------------------------------
-conversa ||--|{ participante_conversa
-usuario  ||--o{ participante_conversa
-conversa ||--o{ mensagem
-usuario  ||--o{ mensagem         : autor
-mensagem |o--o{ mensagem         : resposta
-anuncio  |o--o{ conversa
-usuario  ||--o{ bloqueio_usuario : bloqueador
-usuario  ||--o{ bloqueio_usuario : bloqueado
+conversations ||--|{ conversation_participants
+users  ||--o{ conversation_participants
+conversations ||--o{ messages
+users  ||--o{ messages         : autor
+message |o--o{ messages         : resposta
+listings  |o--o{ conversations
+users  ||--o{ user_blocks : bloqueador
+users  ||--o{ user_blocks : bloqueado
 
 ' --- 6. Marketplace ---------------------------------------------------
-usuario            ||--o{ anuncio   : vendedor
-carta              ||--o{ anuncio
-estado_conservacao |o--o{ anuncio
-anuncio            ||--o{ foto_anuncio
-anuncio            ||--o{ proposta
-usuario            ||--o{ proposta  : comprador
-anuncio            ||--o{ pedido
-usuario            ||--o{ pedido    : comprador
-usuario            ||--o{ pedido    : vendedor
-endereco           ||--o{ pedido
-pedido             ||--|| pagamento
-pedido             ||--|| avaliacao
-usuario            ||--o{ avaliacao : autor
-usuario            ||--o{ avaliacao : avaliado
+users            ||--o{ listings   : vendedor
+cards              ||--o{ listings
+card_conditions |o--o{ listings
+listings            ||--o{ listing_photos
+listings            ||--o{ offers
+users            ||--o{ offers  : comprador
+listings            ||--o{ orders
+users            ||--o{ orders    : comprador
+users            ||--o{ orders    : vendedor
+addresses           ||--o{ orders
+orders             ||--|| payments
+orders             ||--|| reviews
+users            ||--o{ reviews : autor
+users            ||--o{ reviews : avaliado
 
 ' --- 7. Notificacoes e Favoritos --------------------------------------
-usuario            ||--o{ favorito
-album              |o--o{ favorito
-carta              |o--o{ favorito
-grupo              |o--o{ favorito
-usuario            ||--o{ alerta_preco
-carta              ||--o{ alerta_preco
-usuario            ||--o{ notificacao
-notificacao_global |o--o{ notificacao
-usuario            ||--o{ notificacao_global : admin
+users            ||--o{ favorites
+albums              |o--o{ favorites
+cards              |o--o{ favorites
+groups              |o--o{ favorites
+users            ||--o{ price_alerts
+cards              ||--o{ price_alerts
+users            ||--o{ notifications
+global_notifications |o--o{ notifications
+users            ||--o{ global_notifications : admin
 
 ' --- 8. Moderacao e Administracao -------------------------------------
-usuario        ||--o{ denuncia             : denunciante
-usuario        |o--o{ denuncia             : moderador
-usuario        |o--o{ denuncia             : alvo
-anuncio        |o--o{ denuncia
-mensagem_grupo |o--o{ denuncia
-usuario        ||--o{ solicitacao_cadastro : solicitante
-usuario        |o--o{ solicitacao_cadastro : avaliador
-carta          |o--o{ solicitacao_cadastro
-album          |o--o{ solicitacao_cadastro
-usuario        ||--o{ log_auditoria        : admin
-usuario        |o--o{ configuracao_global  : admin
+users        ||--o{ reports             : denunciante
+users        |o--o{ reports             : moderador
+users        |o--o{ reports             : alvo
+listings        |o--o{ reports
+group_messages |o--o{ reports
+users        ||--o{ catalog_requests : solicitante
+users        |o--o{ catalog_requests : avaliador
+cards          |o--o{ catalog_requests
+albums          |o--o{ catalog_requests
+users        ||--o{ audit_logs        : admin
+users        |o--o{ global_settings  : admin
 
 @enduml
